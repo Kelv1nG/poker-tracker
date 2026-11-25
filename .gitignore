@@ -3,3 +3,8 @@ exports/
 .test-output/
 node_modules/
 __pycache__/
+/data/
+.venv/
+.pytest_cache/
+*.egg-info/
+.superpowers/
