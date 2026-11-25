@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Poker Tracker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <header>
+      <img src="icon.svg" width="38" height="38" alt="">
+      <div><p class="eyebrow">POKER TRACKER</p><h1>Export your hands</h1></div>
+    </header>
+    <p class="intro">Collect from the hand history you have open.</p>
+
+    <form id="export-form">
+      <fieldset id="settings">
+        <legend>Date range</legend>
+        <div class="range">
+          <label for="from">From</label>
+          <input id="from" name="from" type="datetime-local" step="60" required>
+          <label for="to">To</label>
+          <input id="to" name="to" type="datetime-local" step="60" required>
+        </div>
+        <p class="hint">Inclusive. Times match “Hand Started” on the page.</p>
+        <label class="folder-label" for="folder">Export folder</label>
+        <div class="destination"><span>Downloads /</span><input id="folder" name="folder" type="text" maxlength="200" placeholder="PokerTracker" required spellcheck="false" autocomplete="off" aria-describedby="folder-hint"></div>
+        <p class="hint" id="folder-hint">Relative to Firefox’s Downloads folder. Remembered automatically.</p>
+      </fieldset>
+
+      <p id="source" class="source">Checking the current hand…</p>
+      <p class="direction">Starts at the displayed hand and walks backward. Open the newest hand you want to include.</p>
+      <p id="error" class="error" role="alert" hidden></p>
+      <div class="actions">
+        <button id="start" type="submit" class="primary">Start export <span aria-hidden="true">↓</span></button>
+        <button id="stop" type="button" class="secondary" hidden>Stop</button>
+        <button id="retry" type="button" class="primary" hidden>Retry save</button>
+      </div>
+    </form>
+
+    <section class="progress" aria-label="Export progress" aria-live="polite">
+      <div class="status-row"><h2 id="status-title">Ready</h2><span class="badge" id="badge">LOCAL JSON</span></div>
+      <div class="metrics"><div><strong id="inspected">0</strong><span>Inspected</span></div><div><strong id="collected">0</strong><span>Collected</span></div></div>
+      <p class="current" id="current">No hands collected yet.</p>
+      <p id="status-note" class="status-note">The file saves automatically when collection ends.</p>
+      <p id="saved-path" class="saved-path" hidden></p>
+    </section>
+    <footer>Runs in this tab. Your export stays on this computer.</footer>
+  </main>
+  <script src="lib/core.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

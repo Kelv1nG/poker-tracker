@@ -1,0 +1,12 @@
+{
+  "name": "poker-tracker-firefox",
+  "version": "0.1.3",
+  "private": true,
+  "description": "Local Firefox hand history export for an already-open Bet88 history page",
+  "scripts": {
+    "test": "node --test --test-isolation=none tests/*.test.cjs && python3 scripts/test-browser.py",
+    "check": "node scripts/check.cjs",
+    "package": "python3 scripts/package.py"
+  },
+  "engines": { "node": ">=24" }
+}
