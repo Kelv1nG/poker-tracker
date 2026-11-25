@@ -9,6 +9,7 @@ from tempfile import SpooledTemporaryFile
 from threading import Lock
 
 from .importer import Importer
+from .jobs import WatchReceipt
 
 
 @dataclass(frozen=True)
@@ -21,7 +22,7 @@ class ScanResult:
 
 
 def _signature(stat):
-    return [stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns]
+    return [stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns]
 
 
 class FolderScanner:
@@ -38,13 +39,6 @@ class FolderScanner:
         with self.importer.database.read_connection() as con:
             return {key: json.loads(value) for key, value in con.execute(
                 "SELECT key,value FROM app_settings WHERE key IN ('watch_path','watch_enabled','watcher_seen')").fetchall()}
-
-    def _remember(self, path, signature):
-        with self.importer.database.write_transaction() as con:
-            row = con.execute("SELECT value FROM app_settings WHERE key='watcher_seen'").fetchone()
-            seen = json.loads(row[0]) if row else {}
-            seen[str(path)] = signature
-            con.execute("INSERT OR REPLACE INTO app_settings VALUES ('watcher_seen', ?)", [json.dumps(seen)])
 
     @contextmanager
     def _snapshot(self, path, signature):
@@ -110,8 +104,8 @@ class FolderScanner:
                             if snapshot is None:
                                 self._observed.pop(path, None)
                                 continue
-                            job = self.importer.enqueue(snapshot, path.name, 'watch')
-                        self._remember(path, signature)
+                            job = self.importer.enqueue(snapshot, path.name, 'watch',
+                                watch_receipt=WatchReceipt(str(path), tuple(signature)))
                         seen[str(path)] = signature
                         jobs.append(job.job_id)
                     except FileNotFoundError:

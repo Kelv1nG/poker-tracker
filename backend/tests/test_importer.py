@@ -119,6 +119,42 @@ def test_simultaneous_upload_and_watch_coalesce_active_job(importer, preflop_han
     assert importer.run_next().counts == Counts(1, 0, 0)
 
 
+def test_coalesced_submissions_retain_each_filename_and_trigger(importer, preflop_hand):
+    from poker_tracker.queries.hands import get_hand
+    raw = export_bytes([preflop_hand])
+    first = importer.enqueue(BytesIO(raw), 'first.json', 'upload')
+    second = importer.enqueue(BytesIO(raw), 'second.json', 'watch')
+    assert first.job_id == second.job_id
+    importer.run_next()
+    provenance = get_hand(importer.database, 'bet88', preflop_hand['id'])['provenance'][0]
+    assert provenance['filenames'] == ['first.json', 'second.json']
+    assert {(s['filename'], s['trigger']) for s in provenance['submissions']} == {
+        ('first.json','upload'), ('second.json','watch')}
+
+
+def test_explicit_foreign_source_cannot_claim_bet88_identity(importer, preflop_hand):
+    result = submit(importer, [preflop_hand], source='Another poker room')
+    assert result.status == 'failed'
+    assert 'source' in result.error.lower()
+    assert rows(importer, 'SELECT count(*) FROM hands') == [(0,)]
+
+
+def test_additive_json_numbers_remain_exact_through_storage_comparison_and_detail(importer, preflop_hand):
+    from poker_tracker.queries.hands import get_hand
+    preflop_hand['extra_number'] = '__precise__'
+    template = export_bytes([preflop_hand])
+    raw = template.replace(b'"__precise__"', b'0.100000000000000001')
+    different = template.replace(b'"__precise__"', b'0.100000000000000002')
+    importer.enqueue(BytesIO(raw), 'first.json', 'upload')
+    assert importer.run_next().counts == Counts(1, 0, 0)
+    importer.enqueue(BytesIO(different), 'changed.json', 'upload')
+    assert importer.run_next().counts == Counts(0, 0, 1, 1)
+    payload = rows(importer, 'SELECT payload FROM hands')[0][0]
+    assert '0.100000000000000001' in payload
+    detail = get_hand(importer.database, 'bet88', preflop_hand['id'])
+    assert detail['payload']['extra_number'] == Decimal('0.100000000000000001')
+
+
 def test_source_context_applies_only_to_new_canonical_hands(importer, preflop_hand, twice_hand):
     submit(importer, [preflop_hand])
     with importer.database.write_transaction() as con:

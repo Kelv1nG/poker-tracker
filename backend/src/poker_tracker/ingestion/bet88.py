@@ -1,8 +1,9 @@
-import json
 import re
 from datetime import datetime, timezone
 from uuid import UUID
 from zoneinfo import ZoneInfo
+
+from poker_tracker.json_codec import decode_json
 
 from .fingerprints import hand_fingerprint, structured_payload
 from .models import ExportEnvelope, NormalizedEvent, NormalizedHand, NormalizedPhase, NormalizedPlayer
@@ -128,25 +129,14 @@ def normalize_hand(raw: dict, source_id: str, *, source_timezone=None, currency_
         table_name, started, 'minute', source_timezone, utc, currency_code, flags, players, phases)
 
 
-def _reject_constant(value):
-    raise ValueError(f'Invalid JSON constant: {value}')
-
-
-def _unique_keys(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError(f'Duplicate JSON key: {key}')
-        result[key] = value
-    return result
-
-
 def validate_envelope(raw: bytes) -> ExportEnvelope:
     try:
-        envelope = json.loads(raw, parse_constant=_reject_constant, object_pairs_hook=_unique_keys)
+        envelope = decode_json(raw)
     except (UnicodeError, ValueError) as exc:
         raise ValueError(f'Invalid JSON: {exc}') from exc
     _object(envelope, 'export')
+    if 'source' in envelope and envelope['source'] != 'Bet88 hand history':
+        raise ValueError('source: unsupported exporter; expected Bet88 hand history')
     if type(envelope.get('schema_version')) is not int or envelope['schema_version'] != 1:
         raise ValueError('schema_version: only version 1 is supported')
     hands = _list(envelope.get('hands'), 'hands')

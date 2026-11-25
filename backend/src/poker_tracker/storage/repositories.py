@@ -1,10 +1,10 @@
-import json
+from poker_tracker.json_codec import decode_json, encode_json
 
 from poker_tracker.ingestion.jobs import Counts, ImportJob
 
 
 def encode(value):
-    return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False)
+    return encode_json(value)
 
 
 class Repository:
@@ -17,7 +17,14 @@ class Repository:
         data = dict(zip([d[0] for d in cursor.description], row))
         counts = Counts(*(data.pop(f'{key}_count') for key in ('new', 'duplicate', 'rejected', 'conflict')))
         metadata = data.pop('source_metadata')
-        return ImportJob(**data, counts=counts, source_metadata=json.loads(metadata) if metadata else None)
+        return ImportJob(**data, counts=counts, source_metadata=decode_json(metadata) if metadata else None)
+
+    @staticmethod
+    def remember_watch_receipt(con, receipt):
+        row = con.execute("SELECT value FROM app_settings WHERE key='watcher_seen'").fetchone()
+        seen = decode_json(row[0]) if row else {}
+        seen[receipt.path] = list(receipt.signature)
+        con.execute("INSERT OR REPLACE INTO app_settings VALUES ('watcher_seen', ?)", [encode(seen)])
 
     @staticmethod
     def insert_hand(con, hand):

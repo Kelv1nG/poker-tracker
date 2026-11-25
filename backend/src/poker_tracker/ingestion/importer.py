@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from poker_tracker.ingestion.archive import archive_source, ArchivedSource
 from poker_tracker.ingestion.bet88 import normalize_hand, validate_envelope
-from poker_tracker.ingestion.jobs import Counts, ImportJob
+from poker_tracker.ingestion.jobs import Counts, ImportJob, WatchReceipt
 from poker_tracker.storage.database import Database
 from poker_tracker.storage.repositories import Repository
 
@@ -16,28 +16,37 @@ class Importer:
         self.settings = settings
         self.database = Database(settings.database_path)
 
-    def enqueue(self, stream, filename: str, trigger: str, source_id='bet88') -> ImportJob:
+    def enqueue(self, stream, filename: str, trigger: str, source_id='bet88', *, watch_receipt: WatchReceipt | None = None) -> ImportJob:
         if trigger not in ('upload', 'watch') or source_id != 'bet88':
             raise ValueError('Unsupported import trigger or source')
         if not isinstance(filename, str) or not filename:
             raise ValueError('A source filename is required')
+        if watch_receipt is not None and trigger != 'watch':
+            raise ValueError('Watch receipts are only valid for directory imports')
         archive = archive_source(stream, self.settings)
         with self.database.write_transaction() as con:
-            return self._queue(con, archive, filename, trigger, source_id)
+            job = self._queue(con, archive, filename, trigger, source_id)
+            if watch_receipt is not None:
+                Repository.remember_watch_receipt(con, watch_receipt)
+            return job
 
     def _queue(self, con, archive, filename, trigger, source_id, retry_of=None):
         active = con.execute('''SELECT job_id FROM import_jobs WHERE source_hash=?
             AND source_id=? AND importer_version=? AND status IN ('queued','processing')
             ORDER BY created_at, job_id LIMIT 1''', [archive.sha256, source_id, IMPORTER_VERSION]).fetchone()
         if active:
-            return Repository.get_job(con, active[0])
-        con.execute('''INSERT INTO source_files (sha256, archive_path, byte_size) VALUES (?, ?, ?)
-            ON CONFLICT DO NOTHING''', [archive.sha256,
-                str(archive.path.relative_to(self.settings.data_dir)), archive.byte_size])
-        job_id = str(uuid4())
-        con.execute('''INSERT INTO import_jobs (job_id,source_hash,source_id,trigger,filename,
-            importer_version,status,retry_of) VALUES (?, ?, ?, ?, ?, ?, 'queued', ?)''',
-            [job_id, archive.sha256, source_id, trigger, filename, IMPORTER_VERSION, retry_of])
+            job_id = active[0]
+        else:
+            con.execute('''INSERT INTO source_files (sha256, archive_path, byte_size) VALUES (?, ?, ?)
+                ON CONFLICT DO NOTHING''', [archive.sha256,
+                    str(archive.path.relative_to(self.settings.data_dir)), archive.byte_size])
+            job_id = str(uuid4())
+            con.execute('''INSERT INTO import_jobs (job_id,source_hash,source_id,trigger,filename,
+                importer_version,status,retry_of) VALUES (?, ?, ?, ?, ?, ?, 'queued', ?)''',
+                [job_id, archive.sha256, source_id, trigger, filename, IMPORTER_VERSION, retry_of])
+        con.execute('''INSERT INTO import_submissions
+            (submission_id,job_id,source_hash,source_id,filename,trigger) VALUES (?, ?, ?, ?, ?, ?)''',
+            [str(uuid4()),job_id,archive.sha256,source_id,filename,trigger])
         return Repository.get_job(con, job_id)
 
     def retry(self, job_id):

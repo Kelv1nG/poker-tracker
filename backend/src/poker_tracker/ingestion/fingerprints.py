@@ -1,5 +1,6 @@
 import hashlib
-import json
+
+from poker_tracker.json_codec import encode_json
 
 
 def structured_payload(raw):
@@ -11,6 +12,5 @@ def structured_payload(raw):
 
 
 def hand_fingerprint(raw: dict) -> str:
-    encoded = json.dumps(structured_payload(raw), sort_keys=True, ensure_ascii=False,
-                         separators=(',', ':'), allow_nan=False).encode('utf-8')
+    encoded = encode_json(structured_payload(raw), sort_keys=True).encode('utf-8')
     return hashlib.sha256(encoded).hexdigest()

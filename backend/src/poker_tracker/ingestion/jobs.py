@@ -11,6 +11,12 @@ class Counts:
 
 
 @dataclass(frozen=True)
+class WatchReceipt:
+    path: str
+    signature: tuple[int, ...]
+
+
+@dataclass(frozen=True)
 class ImportJob:
     job_id: str
     source_hash: str

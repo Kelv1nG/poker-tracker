@@ -1,4 +1,5 @@
 import json
+import os
 from io import BytesIO
 
 import pytest
@@ -147,3 +148,47 @@ def test_archive_file_symlinks_are_not_imported(setup, preflop_hand):
     clock.now += 2
     assert scanner.scan_once().job_ids == []
     assert rows(importer, 'SELECT count(*) FROM import_jobs') == [(1,)]
+
+
+def test_interruption_after_acceptance_does_not_requeue_unchanged_input(setup, preflop_hand, monkeypatch):
+    importer, directory, clock = setup
+    (directory / 'one.json').write_bytes(export_bytes([preflop_hand]))
+    scanner = FolderScanner(importer, clock=clock)
+    scanner.scan_once()
+    original = importer.enqueue
+
+    def interrupt_after_acceptance(*args, **kwargs):
+        original(*args, **kwargs)
+        raise RuntimeError('process ended after acceptance')
+
+    clock.now += 2
+    with monkeypatch.context() as patch:
+        patch.setattr(importer, 'enqueue', interrupt_after_acceptance)
+        with pytest.raises(RuntimeError):
+            scanner.scan_once()
+    assert importer.run_next().counts.new == 1
+    restarted = FolderScanner(Importer(importer.settings), clock=clock)
+    restarted.scan_once()
+    clock.now += 2
+    assert restarted.scan_once().job_ids == []
+    assert rows(importer, 'SELECT count(*) FROM import_jobs') == [(1,)]
+
+
+def test_same_size_overwrite_with_preserved_mtime_is_reconsidered(setup, preflop_hand):
+    importer, directory, clock = setup
+    path = directory / 'one.json'
+    raw = export_bytes([preflop_hand])
+    path.write_bytes(raw)
+    scanner = FolderScanner(importer, clock=clock)
+    scanner.scan_once()
+    clock.now += 2
+    scanner.scan_once()
+    importer.run_next()
+    before = path.stat()
+    path.write_bytes(raw.replace(preflop_hand['id'].encode(), b'00000000-0000-4000-8000-000000000003'))
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+    assert path.stat().st_size == before.st_size
+    scanner.scan_once()
+    clock.now += 2
+    assert len(scanner.scan_once().job_ids) == 1
+    assert importer.run_next().counts.new == 1

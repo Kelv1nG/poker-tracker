@@ -5,6 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from poker_tracker.storage.database import Database
+from poker_tracker.json_codec import decode_json
 
 
 def _minute(value):
@@ -80,17 +81,19 @@ def get_hand(database: Database, source_id: str, hand_id: str):
         if row is None:
             raise KeyError((source_id,hand_id))
         result = dict(zip([d[0] for d in cursor.description], row))
-        result['payload'] = json.loads(result['payload'])
-        result['quality_flags'] = json.loads(result['quality_flags'])
+        result['payload'] = decode_json(result['payload'])
+        result['quality_flags'] = decode_json(result['quality_flags'])
         result['started_at_local'] = _print_minute(result['started_at_local'])
         result['started_at_utc'] = _print_minute(result['started_at_utc'])
         links = con.execute('''SELECT source_hash,source_index,payload_hash,is_conflict
             FROM hand_sources WHERE source_id=? AND hand_id=? ORDER BY source_hash,source_index''', [source_id,hand_id]).fetchall()
         provenance = []
         for source_hash, index, payload_hash, conflict in links:
-            filenames = [r[0] for r in con.execute(
-                'SELECT DISTINCT filename FROM import_jobs WHERE source_hash=? ORDER BY filename', [source_hash]).fetchall()]
+            submissions = [dict(filename=r[0],trigger=r[1],job_id=r[2],submitted_at=r[3].isoformat())
+                for r in con.execute('''SELECT filename,trigger,job_id,submitted_at FROM import_submissions
+                    WHERE source_hash=? AND source_id=? ORDER BY submitted_at,submission_id''', [source_hash,source_id]).fetchall()]
+            filenames = sorted({s['filename'] for s in submissions})
             provenance.append(dict(source_hash=source_hash, source_index=index, payload_hash=payload_hash,
-                                   is_conflict=conflict, filenames=filenames))
+                                   is_conflict=conflict, filenames=filenames, submissions=submissions))
         result['provenance'] = provenance
     return result

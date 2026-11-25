@@ -31,17 +31,16 @@ class Database:
             # TIMESTAMPTZ rendering otherwise follows the machine's timezone.
             # This does not interpret or alter timezone-free source timestamps.
             con.execute("SET TimeZone='UTC'")
+            con.execute('BEGIN TRANSACTION')
             yield con
+            con.execute('COMMIT')
+        except BaseException:
+            con.execute('ROLLBACK')
+            raise
         finally:
             con.close()
 
     @contextmanager
     def write_transaction(self):
         with self.writer_lock, self.read_connection() as con:
-            con.execute('BEGIN TRANSACTION')
-            try:
-                yield con
-                con.execute('COMMIT')
-            except BaseException:
-                con.execute('ROLLBACK')
-                raise
+            yield con
