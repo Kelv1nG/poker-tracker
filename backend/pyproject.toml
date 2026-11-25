@@ -7,7 +7,7 @@ name = "poker-tracker"
 version = "0.1.0"
 description = "Local poker hand ingestion and analysis"
 requires-python = ">=3.12"
-dependencies = ["duckdb==1.5.5"]
+dependencies = ["duckdb==1.5.5", "pytz==2026.6"]
 
 [project.optional-dependencies]
 dev = ["pytest==9.1.1"]

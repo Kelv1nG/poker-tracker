@@ -28,6 +28,9 @@ class Database:
     def read_connection(self):
         con = duckdb.connect(str(self.path), config={'threads': 2})
         try:
+            # TIMESTAMPTZ rendering otherwise follows the machine's timezone.
+            # This does not interpret or alter timezone-free source timestamps.
+            con.execute("SET TimeZone='UTC'")
             yield con
         finally:
             con.close()
