@@ -1,0 +1,90 @@
+<div id="poker-imports-preview" aria-label="Poker tracker Imports screen design preview">
+  <style>
+    #poker-imports-preview { color-scheme: light dark; --pt-bg:light-dark(#fafbf9,#141b18); --pt-panel:light-dark(#ffffff,#1a2520); --pt-text:light-dark(#1e3026,#e4ece6); --pt-muted:light-dark(#5a6b60,#a5b6a9); --pt-line:light-dark(#dce5dd,#34483b); --pt-nav:light-dark(#edf3ec,#1d3024); --pt-accent:light-dark(#315d3b,#b8dbab); --pt-on-accent:light-dark(#ffffff,#172b1b); --pt-space:16px; font:14px/1.5 system-ui,sans-serif; color:var(--pt-text); }
+    #poker-imports-preview * { box-sizing:border-box; }
+    #poker-imports-preview .pt-shell { background:var(--pt-bg); border:1px solid var(--pt-line); border-radius:12px; overflow:hidden; }
+    #poker-imports-preview .pt-top { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 22px; background:var(--pt-panel); border-bottom:1px solid var(--pt-line); }
+    #poker-imports-preview .pt-brand { font-weight:600; letter-spacing:-.3px; font-size:16px; }
+    #poker-imports-preview .pt-local { color:var(--pt-muted); font-size:12px; }
+    #poker-imports-preview .pt-layout { display:grid; grid-template-columns:152px minmax(0,1fr); }
+    #poker-imports-preview .pt-nav { padding:20px 12px; border-right:1px solid var(--pt-line); display:flex; flex-direction:column; gap:5px; }
+    #poker-imports-preview .pt-nav span { padding:9px 12px; border-radius:6px; color:var(--pt-muted); }
+    #poker-imports-preview .pt-nav .pt-active { background:var(--pt-nav); color:var(--pt-text); font-weight:500; }
+    #poker-imports-preview .pt-content { min-width:0; padding:24px; }
+    #poker-imports-preview .pt-heading { display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin-bottom:22px; }
+    #poker-imports-preview h2 { margin:0; font-size:22px; line-height:1.3; letter-spacing:-.5px; font-weight:600; }
+    #poker-imports-preview p { margin:5px 0 0; }
+    #poker-imports-preview .pt-sub { color:var(--pt-muted); font-size:12px; }
+    #poker-imports-preview button { font:inherit; padding:8px 13px; border:1px solid var(--pt-line); border-radius:6px; background:var(--pt-panel); color:var(--pt-text); }
+    #poker-imports-preview .pt-primary { background:var(--pt-accent); color:var(--pt-on-accent); border-color:var(--pt-accent); }
+    #poker-imports-preview .pt-watcher { background:var(--pt-panel); border:1px solid var(--pt-line); border-radius:8px; padding:var(--pt-space); margin-bottom:24px; }
+    #poker-imports-preview .pt-watch-title { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    #poker-imports-preview .pt-watch-title strong { font-weight:500; }
+    #poker-imports-preview .pt-controls { display:flex; align-items:center; gap:8px; }
+    #poker-imports-preview .pt-controls input { min-width:0; flex:1; border:1px solid var(--pt-line); border-radius:6px; padding:9px 10px; background:var(--pt-bg); color:var(--pt-text); font:inherit; font-size:12px; }
+    #poker-imports-preview .pt-controls button { flex-shrink:0; }
+    #poker-imports-preview .pt-state { color:var(--pt-muted); font-size:12px; }
+    #poker-imports-preview .pt-table-label { margin:0 0 12px; font-size:14px; font-weight:500; }
+    #poker-imports-preview .pt-table-wrap { overflow-x:auto; }
+    #poker-imports-preview table { width:100%; border-collapse:collapse; font-size:12px; }
+    #poker-imports-preview th { color:var(--pt-muted); font-weight:400; text-align:left; padding:0 10px 9px 0; border-bottom:1px solid var(--pt-line); }
+    #poker-imports-preview td { padding:var(--pt-space) 10px var(--pt-space) 0; border-bottom:1px solid var(--pt-line); vertical-align:top; }
+    #poker-imports-preview th:not(:first-child), #poker-imports-preview td:not(:first-child) { text-align:right; white-space:nowrap; }
+    #poker-imports-preview .pt-file { overflow-wrap:anywhere; }
+    #poker-imports-preview .pt-file span { display:block; margin-top:3px; color:var(--pt-muted); }
+    #poker-imports-preview .pt-footer { color:var(--pt-muted); margin-top:14px; font-size:12px; }
+    #poker-imports-preview input[type=file] { display:none; }
+    #poker-imports-preview button:focus-visible, #poker-imports-preview input:focus-visible { outline:2px solid var(--pt-accent); outline-offset:3px; }
+    @media(max-width:700px) {
+      #poker-imports-preview .pt-layout { grid-template-columns:1fr; }
+      #poker-imports-preview .pt-nav { flex-direction:row; border-right:0; border-bottom:1px solid var(--pt-line); padding:8px; }
+      #poker-imports-preview .pt-content { padding:18px; }
+      #poker-imports-preview .pt-controls { align-items:stretch; flex-direction:column; }
+      #poker-imports-preview .pt-controls input { width:100%; }
+      #poker-imports-preview .pt-top { padding:14px 18px; }
+    }
+  </style>
+  <div class="pt-shell">
+    <header class="pt-top"><span class="pt-brand">Poker Tracker</span><span class="pt-local">Local workspace</span></header>
+    <div class="pt-layout">
+      <nav class="pt-nav" aria-label="Proposed application navigation"><span class="pt-active" aria-current="page">Imports</span><span>Hands</span><span>Overview</span></nav>
+      <main class="pt-content">
+        <div class="pt-heading"><div><h2>Imports</h2><p class="pt-sub">Add hand histories or collect new exports automatically.</p></div><button class="pt-primary cursor-interaction" id="pt-choose-file" type="button">Import JSON</button><input id="pt-file" type="file" accept=".json,application/json" aria-label="Select a JSON file for the preview"></div>
+        <section class="pt-watcher" aria-label="Watched folder design">
+          <div class="pt-watch-title"><strong>Automatic import</strong><span class="pt-state" id="pt-watch-state" aria-live="polite">Paused</span></div>
+          <label class="pt-sub" for="pt-folder">Watch folder</label>
+          <div class="pt-controls"><input id="pt-folder" value="/home/kelvin/Downloads/PokerTracker" spellcheck="false"><button id="pt-watch" class="cursor-interaction" type="button" aria-pressed="false">Start watching</button></div>
+          <p class="pt-sub">Checks for new JSON files while the application is running.</p>
+        </section>
+        <h3 class="pt-table-label">Import history <span class="pt-sub">· example state</span></h3>
+        <div class="pt-table-wrap"><table aria-label="Example import result"><thead><tr><th>File</th><th>New</th><th>Duplicates</th><th>Rejected</th><th>Status</th></tr></thead><tbody><tr><td class="pt-file" id="pt-file-name">hands_2026-11-25.cleaned.json<span>Manual upload · 6.2 MB</span></td><td>1,145</td><td>0</td><td>0</td><td id="pt-import-state">Imported</td></tr></tbody></table></div>
+        <p class="pt-footer" id="pt-preview-note" aria-live="polite">Design preview. File imports and folder watching are not connected.</p>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const root = document.getElementById('poker-imports-preview');
+      const watch = root.querySelector('#pt-watch');
+      const state = { watching: false, density: 'Comfortable' };
+      function render() {
+        watch.textContent = state.watching ? 'Pause watching' : 'Start watching';
+        watch.setAttribute('aria-pressed', String(state.watching));
+        root.querySelector('#pt-watch-state').textContent = state.watching ? 'Watching · preview' : 'Paused';
+        root.style.setProperty('--pt-space', state.density === 'Compact' ? '10px' : '16px');
+      }
+      watch.addEventListener('click', () => { state.watching = !state.watching; render(); });
+      const file = root.querySelector('#pt-file');
+      root.querySelector('#pt-choose-file').addEventListener('click', () => file.click());
+      file.addEventListener('change', () => {
+        const selected = file.files[0];
+        if (selected) root.querySelector('#pt-preview-note').textContent = `Selected ${selected.name} for this preview. No data has been imported.`;
+      });
+      render();
+      if (globalThis.Tweak) {
+        const tweak = new Tweak({ container: root, onChange: render });
+        tweak.addSelect(state, 'density', { label: 'Row spacing', options: ['Comfortable', 'Compact'] });
+      }
+    })();
+  </script>
+</div>
