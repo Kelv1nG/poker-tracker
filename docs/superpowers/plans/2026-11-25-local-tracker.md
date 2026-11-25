@@ -10,6 +10,19 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-25-local-tracker-design.md`
 
+## Execution status — November 26, 2026
+
+- Tasks 1–3 implemented and verified: storage, normalization, durable importer/worker.
+- Task 4 partly implemented: stable, resumable folder discovery is tested; HTTP routes and application lifecycle are pending.
+- Task 5 pending: only a dependency-bootstrap manifest exists; frontend dependencies and the React app are not installed/implemented.
+- Task 6 partly implemented: hand queries, cursor pagination, detail/provenance and overview are tested; API/UI integration is pending.
+- Task 7 pending: a real 1,145-hand importer smoke test passed; full application acceptance, browser verification and final application review remain.
+
+Package downloads fail because this session cannot resolve registry hostnames.
+Cached dependencies allow the core tests to run. FastAPI/multipart and React/Vite/Vitest
+are absent from the local caches. The approved stack remains unchanged. See
+`backend/README.md` for the runnable core and setup instructions.
+
 ## Global Constraints
 
 - The application runs on the user's computer and opens in a browser.
@@ -37,12 +50,12 @@
 
 **Interfaces:** `Settings(data_dir: Path, max_upload_bytes: int = 104857600)`; `Database(path: Path)` with `read_connection()` and `write_transaction()` context managers; `archive_source(stream: BinaryIO, settings: Settings) -> ArchivedSource(sha256, path, byte_size)`. All runtime paths come from Settings; tests supply temporary roots.
 
-- [ ] Set up an isolated backend environment and pin dependencies. Commands: `python3 -m venv backend/.venv`, then `backend/.venv/bin/python -m pip install -e './backend[dev]'`. Expected: dependencies install into that environment. Report unavailable dependencies rather than silently replacing the proposed stack.
-- [ ] Write failing tests: archive bytes and SHA match input; two differently named identical uploads reuse one archive; malicious filenames never become disk paths; oversize uploads are not accepted; migrations rerun safely; rolled-back writes are absent; distinct threads do not share a connection.
-- [ ] Run `backend/.venv/bin/python -m pytest backend/tests/test_archive.py backend/tests/test_storage.py -q`. Expected: failures identify absent archive/storage behavior.
-- [ ] Implement content-addressed staging/finalization and initial migration tables from the spec. Preserve exact bytes; enforce size during streaming; ensure an existing hash refers to matching stored content. Supply the shared writer lock and independent read connections.
-- [ ] Run the same tests. Expected: all pass, including restart with an existing database and archive.
-- [ ] Commit this complete storage/archive chunk: `feat(storage): add local database and immutable source archive`.
+- [x] Set up an isolated backend environment and pin dependencies. Commands: `python3 -m venv backend/.venv`, then `backend/.venv/bin/python -m pip install -e './backend[dev]'`. Expected: dependencies install into that environment. Report unavailable dependencies rather than silently replacing the proposed stack.
+- [x] Write failing tests: archive bytes and SHA match input; two differently named identical uploads reuse one archive; malicious filenames never become disk paths; oversize uploads are not accepted; migrations rerun safely; rolled-back writes are absent; distinct threads do not share a connection.
+- [x] Run `backend/.venv/bin/python -m pytest backend/tests/test_archive.py backend/tests/test_storage.py -q`. Expected: failures identify absent archive/storage behavior.
+- [x] Implement content-addressed staging/finalization and initial migration tables from the spec. Preserve exact bytes; enforce size during streaming; ensure an existing hash refers to matching stored content. Supply the shared writer lock and independent read connections.
+- [x] Run the same tests. Expected: all pass, including restart with an existing database and archive.
+- [x] Commit this complete storage/archive chunk: `feat(storage): add local database and immutable source archive`.
 
 ## Task 2: Versioned Bet88 normalization
 
@@ -50,12 +63,12 @@
 
 **Interfaces:** `validate_envelope(raw: bytes) -> ExportEnvelope`; `normalize_hand(raw: dict, source_id: str) -> NormalizedHand`; `hand_fingerprint(raw: dict) -> str`; `parse_money(text: str) -> ParsedMoney`. NormalizedHand carries source/ID, printed time, structured payload without raw_html, ordered players/phases/events, and the deterministic payload hash. Validation errors carry source field paths; the importer attaches file indexes.
 
-- [ ] Write failing tests with hand-checked expectations: `$0.13` and `-$1.26` remain exact Decimal values; null/blank action amounts stay null; invalid precision rejects; original time stays `2026-11-25T03:10` and UTC stays null; source plus UUID is identity; key ordering/raw_html do not change a fingerprint while action ordering and result changes do.
-- [ ] Include both actual runout boards in assertions: `5d Kh 2d Tc 8s` and `Jh 7h Td 5h 4s`; preserve the actorless Running it Twice announcement, both acceptance events, and all showdown rows. Include Unicode names and hidden cards. Do not infer run grouping, seats, or raise semantics that the source does not state.
-- [ ] Run `backend/.venv/bin/python -m pytest backend/tests/test_bet88.py backend/tests/test_money.py -q`. Expected: missing normalization behavior fails.
-- [ ] Implement schema-v1 validation and typed records. Accept additive fields, preserve structured payloads, exclude raw_html from derived records, and retain archive/index provenance for all errors. Fail unsupported/malformed envelopes without producing hands.
-- [ ] Run normalization tests and the backend suite. Expected: all pass with no float rounding, guessed currency/hero, or timezone conversion.
-- [ ] Commit: `feat(ingestion): normalize versioned Bet88 hand histories`.
+- [x] Write failing tests with hand-checked expectations: `$0.13` and `-$1.26` remain exact Decimal values; null/blank action amounts stay null; invalid precision rejects; original time stays `2026-11-25T03:10` and UTC stays null; source plus UUID is identity; key ordering/raw_html do not change a fingerprint while action ordering and result changes do.
+- [x] Include both actual runout boards in assertions: `5d Kh 2d Tc 8s` and `Jh 7h Td 5h 4s`; preserve the actorless Running it Twice announcement, both acceptance events, and all showdown rows. Include Unicode names and hidden cards. Do not infer run grouping, seats, or raise semantics that the source does not state.
+- [x] Run `backend/.venv/bin/python -m pytest backend/tests/test_bet88.py backend/tests/test_money.py -q`. Expected: missing normalization behavior fails.
+- [x] Implement schema-v1 validation and typed records. Accept additive fields, preserve structured payloads, exclude raw_html from derived records, and retain archive/index provenance for all errors. Fail unsupported/malformed envelopes without producing hands.
+- [x] Run normalization tests and the backend suite. Expected: all pass with no float rounding, guessed currency/hero, or timezone conversion.
+- [x] Commit: `feat(ingestion): normalize versioned Bet88 hand histories`.
 
 ## Task 3: Durable shared importer
 
@@ -65,18 +78,18 @@
 
 `jobs.py` defines `Counts(new: int, duplicate: int, rejected: int, conflict: int = 0)` with conflict included in rejected, and `ImportJob(job_id, source_hash, source_id, trigger, importer_version, status, counts, filename, timestamps, error, retry_of)`. Job trigger values are upload/watch/retry. API response naming uses `job_id` consistently.
 
-- [ ] Write failing integration tests against temporary real DuckDB files, not a mocked repository:
+- [x] Write failing integration tests against temporary real DuckDB files, not a mocked repository:
   ```python
   assert first_result.counts == Counts(new=2, duplicate=0, rejected=0)
   assert overlap_result.counts == Counts(new=1, duplicate=1, rejected=0)
   assert conflicting_result.counts == Counts(new=0, duplicate=0, rejected=1)
   ```
   Also test renamed identical input, repeated IDs within one input, mixed valid/invalid hands, malformed envelopes, raw-HTML legacy files versus cleaned files, and partial-export metadata.
-- [ ] Test failure before commit leaves no new canonical rows, preserved archived bytes, and a retryable failed job; recovery requeues interrupted work; restarting after a completed commit does not repeat it. Test all normalized child rows and terminal job/count updates roll back together.
-- [ ] Run `backend/.venv/bin/python -m pytest backend/tests/test_importer.py backend/tests/test_recovery.py -q`. Expected: missing import/recovery behaviors fail.
-- [ ] Implement validation/classification followed by one transaction for accepted canonical rows, provenance, outcomes, counts, and terminal status. Keep first canonical data on conflicts. Each manual attempt validates/classifies its rows, so a re-upload cannot conceal previously invalid hands. Avoid an in-memory-only job queue.
-- [ ] Run the backend suite. Expected: counts and canonical totals match literal expectations and no duplicates survive concurrent intake tests.
-- [ ] Commit: `feat(ingestion): add durable deduplicated import jobs`.
+- [x] Test failure before commit leaves no new canonical rows, preserved archived bytes, and a retryable failed job; recovery requeues interrupted work; restarting after a completed commit does not repeat it. Test all normalized child rows and terminal job/count updates roll back together.
+- [x] Run `backend/.venv/bin/python -m pytest backend/tests/test_importer.py backend/tests/test_recovery.py -q`. Expected: missing import/recovery behaviors fail.
+- [x] Implement validation/classification followed by one transaction for accepted canonical rows, provenance, outcomes, counts, and terminal status. Keep first canonical data on conflicts. Each manual attempt validates/classifies its rows, so a re-upload cannot conceal previously invalid hands. Avoid an in-memory-only job queue.
+- [x] Run the backend suite. Expected: counts and canonical totals match literal expectations and no duplicates survive concurrent intake tests.
+- [x] Commit: `feat(ingestion): add durable deduplicated import jobs`.
 
 ## Task 4: Local API, lifecycle, and folder scanner
 
