@@ -1,0 +1,105 @@
+{
+  "id": "7d7e9ea3-ebbd-4a8d-b754-d047d12999d4",
+  "started_at": "2026-11-25T05:00",
+  "started_at_display": "November 25, 2026 5:00 AM",
+  "table_name": "Palmdale",
+  "players": [
+    {
+      "name": "Due Date",
+      "starting_balance": "$2.39",
+      "net_result": "-$0.05",
+      "final_hand": []
+    },
+    {
+      "name": "Tassadar",
+      "starting_balance": "$3.79",
+      "net_result": "$0.05",
+      "final_hand": [
+        "Ad",
+        "7d"
+      ]
+    }
+  ],
+  "phases": [
+    {
+      "name": "Preflop",
+      "board": [],
+      "new_cards": [],
+      "events": [
+        {
+          "type": "action",
+          "player": "Due Date",
+          "action": "SB",
+          "action_code": "SMALL_BLIND",
+          "amount": "0.02",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "BB",
+          "action_code": "BIG_BLIND",
+          "amount": "0.05",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "Was dealt",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            "Ad",
+            "7d"
+          ]
+        },
+        {
+          "type": "action",
+          "player": "Due Date",
+          "action": "Was dealt",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            null,
+            null
+          ]
+        },
+        {
+          "type": "action",
+          "player": "Due Date",
+          "action": "Call",
+          "action_code": "CALL",
+          "amount": "0.03",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "Raise",
+          "action_code": "RAISE",
+          "amount": "0.2",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "Due Date",
+          "action": "Fold",
+          "action_code": "FOLD",
+          "amount": null,
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "Has High card",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            "Ad",
+            "7d"
+          ]
+        }
+      ]
+    }
+  ]
+}

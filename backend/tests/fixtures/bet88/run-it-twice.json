@@ -1,0 +1,443 @@
+{
+  "id": "ca64b12f-c28f-4764-824e-e62cfd4f2a4b",
+  "started_at": "2026-11-25T03:10",
+  "started_at_display": "November 25, 2026 3:10 AM",
+  "table_name": "Apple Valley",
+  "players": [
+    {
+      "name": "GlidingMetal",
+      "starting_balance": "$24.92",
+      "net_result": "$0.13",
+      "final_hand": [
+        "9d",
+        "9s",
+        "Kh",
+        "Tc",
+        "8s"
+      ]
+    },
+    {
+      "name": "Tassadar",
+      "starting_balance": "$3.4",
+      "net_result": "$0.14",
+      "final_hand": [
+        "Kh",
+        "Kd",
+        "As",
+        "Tc",
+        "8s"
+      ]
+    },
+    {
+      "name": "궤꼴",
+      "starting_balance": "$7.15",
+      "net_result": "-$0.25",
+      "final_hand": []
+    },
+    {
+      "name": "INvOkEr✭pRIME",
+      "starting_balance": "$9.71",
+      "net_result": "-$0.4",
+      "final_hand": []
+    }
+  ],
+  "phases": [
+    {
+      "name": "Preflop",
+      "board": [],
+      "new_cards": [],
+      "events": [
+        {
+          "type": "action",
+          "player": "GlidingMetal",
+          "action": "SB",
+          "action_code": "SMALL_BLIND",
+          "amount": "0.05",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "INvOkEr✭pRIME",
+          "action": "BB",
+          "action_code": "BIG_BLIND",
+          "amount": "0.1",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "궤꼴",
+          "action": "Was dealt",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            null,
+            null
+          ]
+        },
+        {
+          "type": "action",
+          "player": "GlidingMetal",
+          "action": "Was dealt",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            null,
+            null
+          ]
+        },
+        {
+          "type": "action",
+          "player": "INvOkEr✭pRIME",
+          "action": "Was dealt",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            null,
+            null
+          ]
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "Was dealt",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            "As",
+            "Kd"
+          ]
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "Raise",
+          "action_code": "RAISE",
+          "amount": "0.25",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "궤꼴",
+          "action": "Call",
+          "action_code": "CALL",
+          "amount": "0.25",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "GlidingMetal",
+          "action": "Raise",
+          "action_code": "RAISE",
+          "amount": "0.4",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "INvOkEr✭pRIME",
+          "action": "Call",
+          "action_code": "CALL",
+          "amount": "0.3",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "Raise",
+          "action_code": "RAISE",
+          "amount": "3.4",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "궤꼴",
+          "action": "Fold",
+          "action_code": "FOLD",
+          "amount": null,
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "GlidingMetal",
+          "action": "Call",
+          "action_code": "CALL",
+          "amount": "3",
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "INvOkEr✭pRIME",
+          "action": "Fold",
+          "action_code": "FOLD",
+          "amount": null,
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "GlidingMetal",
+          "action": "Showing Pocket Cards",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            "9d",
+            "9s"
+          ]
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "Showing Pocket Cards",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            "As",
+            "Kd"
+          ]
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "Run it twice",
+          "action_code": "ACCEPT_RUN_IT_TWICE",
+          "amount": null,
+          "cards": []
+        },
+        {
+          "type": "system",
+          "player": null,
+          "action": "Running it Twice",
+          "action_code": null,
+          "amount": null,
+          "cards": []
+        },
+        {
+          "type": "action",
+          "player": "GlidingMetal",
+          "action": "Run it twice",
+          "action_code": "ACCEPT_RUN_IT_TWICE",
+          "amount": null,
+          "cards": []
+        }
+      ]
+    },
+    {
+      "name": "Flop",
+      "board": [
+        "5d",
+        "Kh",
+        "2d"
+      ],
+      "new_cards": [
+        "5d",
+        "Kh",
+        "2d"
+      ],
+      "events": [
+        {
+          "type": "board",
+          "board": [
+            "5d",
+            "Kh",
+            "2d"
+          ],
+          "new_cards": [
+            "5d",
+            "Kh",
+            "2d"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Turn",
+      "board": [
+        "5d",
+        "Kh",
+        "2d",
+        "Tc"
+      ],
+      "new_cards": [
+        "Tc"
+      ],
+      "events": [
+        {
+          "type": "board",
+          "board": [
+            "5d",
+            "Kh",
+            "2d",
+            "Tc"
+          ],
+          "new_cards": [
+            "Tc"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "River",
+      "board": [
+        "5d",
+        "Kh",
+        "2d",
+        "Tc",
+        "8s"
+      ],
+      "new_cards": [
+        "8s"
+      ],
+      "events": [
+        {
+          "type": "board",
+          "board": [
+            "5d",
+            "Kh",
+            "2d",
+            "Tc",
+            "8s"
+          ],
+          "new_cards": [
+            "8s"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Table Cards Dealt",
+      "board": [
+        "Jh",
+        "7h",
+        "Td"
+      ],
+      "new_cards": [
+        "Jh",
+        "7h",
+        "Td"
+      ],
+      "events": [
+        {
+          "type": "board",
+          "board": [
+            "Jh",
+            "7h",
+            "Td"
+          ],
+          "new_cards": [
+            "Jh",
+            "7h",
+            "Td"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Table Cards Dealt",
+      "board": [
+        "Jh",
+        "7h",
+        "Td",
+        "5h"
+      ],
+      "new_cards": [
+        "5h"
+      ],
+      "events": [
+        {
+          "type": "board",
+          "board": [
+            "Jh",
+            "7h",
+            "Td",
+            "5h"
+          ],
+          "new_cards": [
+            "5h"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Table Cards Dealt",
+      "board": [
+        "Jh",
+        "7h",
+        "Td",
+        "5h",
+        "4s"
+      ],
+      "new_cards": [
+        "4s"
+      ],
+      "events": [
+        {
+          "type": "board",
+          "board": [
+            "Jh",
+            "7h",
+            "Td",
+            "5h",
+            "4s"
+          ],
+          "new_cards": [
+            "4s"
+          ]
+        },
+        {
+          "type": "action",
+          "player": "GlidingMetal",
+          "action": "Has Pair",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            "9d",
+            "9s",
+            "Kh",
+            "Tc",
+            "8s"
+          ]
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "Has Pair",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            "Kh",
+            "Kd",
+            "As",
+            "Tc",
+            "8s"
+          ]
+        },
+        {
+          "type": "action",
+          "player": "GlidingMetal",
+          "action": "Has Pair",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            "9d",
+            "9s",
+            "Jh",
+            "Td",
+            "7h"
+          ]
+        },
+        {
+          "type": "action",
+          "player": "Tassadar",
+          "action": "Has High card",
+          "action_code": null,
+          "amount": null,
+          "cards": [
+            "As",
+            "Kd",
+            "Jh",
+            "Td",
+            "7h"
+          ]
+        }
+      ]
+    }
+  ]
+}
