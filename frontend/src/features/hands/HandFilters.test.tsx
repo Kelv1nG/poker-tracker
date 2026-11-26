@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HandsPage } from './HandsPage';
 
-function setup(hero:string|null='Tassadar',mixed=false) {
+function setup(hero:string|null='Tassadar',mixed=false,actionLine=[{street:'PF',actions:['R','C'],description:'Raise, Call'}]) {
   const requests:URLSearchParams[]=[];
   vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
     const u=new URL(String(input),'http://localhost');
@@ -17,7 +17,7 @@ function setup(hero:string|null='Tassadar',mixed=false) {
         hole_cards:['Qh','9h'],boards:[['7d','Ah','3c','2h','As'],['Jh','7h','Td','5h','4s']],
         preflop_spot:'Limped',position:'UNKNOWN',position_evidence:'Incomplete first orbit',
         net_result:'0.18000000',net_result_display:'$0.18',starting_balance_display:'$4.61',posted_sb:'0.02000000',posted_bb:'0.05000000',nominal_bb:'0.05000000',nominal_sb:'0.02000000',
-        action_line:[{street:'PF',actions:['R','C'],description:'Raise, Call'}],
+        action_line:actionLine,
       }]});
     }
     throw new Error(String(input));
@@ -35,7 +35,7 @@ test('defaults to hero and renders compact cards, two boards, exact money and un
   expect(within(grid).getByText('HU · 2')).toBeInTheDocument();
   expect(within(grid).getByTitle('Incomplete first orbit')).toHaveTextContent('Unknown');
   expect(within(grid).getByRole('img',{name:'Jack of hearts'})).toBeInTheDocument();
-  expect(within(grid).getByTitle('PF: Raise, Call')).toHaveTextContent('PF RC');
+  expect(within(grid).getByTitle('PF: Raise, Call')).toHaveTextContent(/^RC$/);
 });
 
 test('applies combined player filters and resets pagination after changing selection',async()=>{
@@ -177,4 +177,18 @@ test('Net won header requires an applied player while Date works in all-hands mo
   expect(screen.getByRole('button',{name:'Net won'})).toBeDisabled();
   await user.click(screen.getByRole('button',{name:'Date (printed)'}));
   await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('date_asc'));
+});
+
+
+test('shows a single hyphenated line with ordered actions grouped by street',async()=>{
+  setup('Tassadar',false,[
+    {street:'PF',actions:['R'],description:'Raise'},
+    {street:'F',actions:['X'],description:'Check'},
+    {street:'T',actions:['B'],description:'Bet'},
+    {street:'R',actions:['X','F'],description:'Check, Fold'},
+  ]);
+  render(<HandsPage/>);
+  await screen.findByRole('button',{name:/Open Reading hand/});
+  const line=within(screen.getByRole('table',{name:'Hand results'})).getByTitle('PF: Raise; F: Check; T: Bet; R: Check, Fold');
+  expect(line).toHaveTextContent(/^R-X-B-XF$/);
 });

@@ -110,3 +110,11 @@ filter/sort integration tests: 23 pass. Production Firefox checks at 1280px and 
 390px viewport pass, including header clicks rendering actual ASGI-sorted largest
 ($34.86) and smallest (-$20.45) results from the disposable sample library. The original full-suite evidence above
 precedes this UI-only follow-up.
+
+## Compact betting line follow-up
+
+The Line column displays one hyphenated action string, e.g. `R-X-B-XF`, with
+multiple actions on the same street kept together. Street labels remain in hover
+text; the grid shows no street prefixes. Hands without observed actions display a
+dash rather than invented checks. Only presentation changes; normalized event groups
+and full details are preserved. Frontend suite: 25 tests and production build pass.

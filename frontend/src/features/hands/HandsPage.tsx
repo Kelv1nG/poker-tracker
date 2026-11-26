@@ -122,13 +122,16 @@ function SortHeader({label,column,sort,onSort,disabled=false,reason}:{label:stri
 }
 
 function HandRow({hand:h,actor,selected,open}:{hand:HandSummary;actor:boolean;selected:boolean;open:()=>void}) {
+  const lines=h.action_line??[];
+  const line=lines.map(street=>street.actions.join('')).join('-');
+  const lineDescription=lines.map(street=>`${street.street}: ${street.description}`).join('; ');
   const uncertain=h.posted_sb!=null&&h.nominal_sb==null||h.posted_bb!=null&&h.nominal_bb==null;
   return <tr aria-selected={selected}>
     <td className="date-cell">{h.started_at_local.replace('T',' ')}</td>
     <td>{actor?<Cards cards={h.hole_cards??[]}/>:<span className="muted">—</span>}</td>
     <td>{actor?h.player_dealt===false?'Not dealt':h.preflop_spot??'Unknown':'—'}</td>
     <td>{(h.boards??[]).length?(h.boards??[]).map((board,i)=><div key={i} className="runout" aria-label={`Board ${i+1}`}><Cards cards={board}/></div>):<span className="muted">—</span>}</td>
-    <td>{actor?(h.action_line??[]).map((line,i)=><span className="betting-line" key={i} title={`${line.street}: ${line.description}`}>{line.street} {line.actions.join('')}</span>):'—'}</td>
+    <td>{actor&&line?<span className="betting-line" title={lineDescription}>{line}</span>:'—'}</td>
     <td className={`numeric ${actor&&h.net_result?.startsWith('-')?'negative':actor?'positive':''}`}>{actor?h.net_result_display??'Unknown':'—'}</td>
     <td><span title={actor?h.position_evidence??'Insufficient evidence':undefined}>{actor?h.position==='UNKNOWN'||!h.position?'Unknown':h.position==='SB'&&h.game_type==='HU'?'SB / button':h.position:'—'}</span></td>
     <td title={uncertain?'Posted amounts; nominal stakes uncertain':'Ordinary blind posts'}>{compact(h.posted_sb)} / {compact(h.posted_bb)}{uncertain?' *':''}</td>
