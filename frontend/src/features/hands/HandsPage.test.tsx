@@ -8,6 +8,8 @@ function server(payload=twice,{empty=false,fail=false}={}) {
   let failing=fail;
   vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
     const path=String(input).split('?')[0];
+    if(path==='/api/settings')return Response.json({hero_name:null});
+    if(path==='/api/hand-options')return Response.json({players:[],units:[],stakes:[]});
     if(path==='/api/imports')return Response.json({items:[],total:0,next_cursor:null});
     if(path==='/api/hands') {
       if(failing){failing=false;return Response.json({detail:'Library unavailable'},{status:503});}

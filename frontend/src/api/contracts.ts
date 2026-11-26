@@ -18,7 +18,22 @@ export type HandEvent = { type:'board'; board:Card[]; new_cards:Card[] } | {
   type:'action'|'system'; player:string|null; action:string; action_code:string|null; amount:string|null; cards:Card[] };
 export interface Phase { name:string; board:Card[]; new_cards:Card[]; events:HandEvent[] }
 export interface HandPayload { id:string; table_name:string; started_at:string; started_at_display?:string; players:Player[]; phases:Phase[] }
-export interface HandSummary { source_id:string; hand_id:string; table_name:string; started_at_local:string; player_count:number }
+export interface HandIdentity { source_id:string; hand_id:string; table_name:string; started_at_local:string }
+export interface HandSummary extends HandIdentity {
+  player_count:number; player:string|null; player_dealt:boolean|null; dealt_player_count:number|null;
+  game_type:'HU'|'MULTIWAY'|'UNKNOWN'; hole_cards:Card[]; boards:Card[][];
+  action_line:{street:string;actions:string[];description:string}[];
+  preflop_spot:string|null; position:string|null; position_evidence:string|null;
+  net_result:string|null; net_result_display:string|null; starting_balance:string|null; starting_balance_display:string|null;
+  posted_sb:string|null; posted_bb:string|null; nominal_sb:string|null; nominal_bb:string|null;
+  currency_code:string|null; currency_symbol:string|null;
+}
+export interface HandFilters {
+  from?:string; to?:string; table_name?:string; player?:string; include_not_dealt?:boolean;
+  game_type?:string; result?:string; position?:string; action?:string; street?:string;
+  net_min?:string; net_max?:string; unit?:string; stake?:string; sort?:string; cursor?:string|null;
+}
+export interface HandOptions { players:string[]; units:{value:string;label:string}[]; stakes:{value:string;label:string;unit:string}[] }
 export interface Provenance { source_hash:string; source_index:number; payload_hash:string; is_conflict:boolean; filenames:string[]; submissions:Submission[] }
-export interface HandDetail extends Omit<HandSummary,'player_count'> { payload:HandPayload; source_timezone:string|null; started_at_utc:string|null; currency_code:string|null; quality_flags:string[]; provenance:Provenance[] }
+export interface HandDetail extends HandIdentity { payload:HandPayload; source_timezone:string|null; started_at_utc:string|null; currency_code:string|null; quality_flags:string[]; provenance:Provenance[] }
 export interface Overview { hand_count:number; source_file_count:number; import_count:number; failed_import_count:number; rejected_count:number; conflict_count:number; partial_import_count:number; first_observed:string|null; last_observed:string|null }
