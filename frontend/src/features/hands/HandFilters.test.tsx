@@ -90,3 +90,21 @@ test('clearing the action also clears its street constraint',async()=>{
   await user.click(screen.getByRole('button',{name:'Apply filters'}));
   await waitFor(()=>expect(requests.at(-1)?.has('street')).toBe(false));
 });
+
+test('refreshes new money units after an import without overwriting filter drafts',async()=>{
+  let added=false;
+  vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
+    const u=new URL(String(input),'http://localhost');
+    if(u.pathname==='/api/settings')return Response.json({hero_name:'Tassadar'});
+    if(u.pathname==='/api/imports')return Response.json({items:added?[{job_id:'new',status:'completed',counts:{new:1}}]:[],total:0,next_cursor:null});
+    if(u.pathname==='/api/hand-options')return Response.json({players:['Tassadar'],units:[{value:'dollars',label:'Displayed $ (currency unset)'},...(added?[{value:'peso',label:'PHP (₱)'}]:[])],stakes:[]});
+    if(u.pathname==='/api/hands')return Response.json({items:[],total:0,next_cursor:null});
+    throw new Error(String(input));
+  }));
+  const user=userEvent.setup();render(<HandsPage/>);
+  await screen.findByText('No hands found');
+  await user.type(screen.getByLabelText('Table name'),'Draft table');
+  added=true;
+  await waitFor(()=>expect(within(screen.getByLabelText('Money unit')).getByText('PHP (₱)')).toBeInTheDocument(),{timeout:2500});
+  expect(screen.getByLabelText('Table name')).toHaveValue('Draft table');
+});

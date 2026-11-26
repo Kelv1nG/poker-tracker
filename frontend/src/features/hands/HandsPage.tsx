@@ -21,13 +21,13 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
   const [cursors,setCursors]=useState<(string|null)[]>([null]);const cursor=cursors.at(-1)??null;
   const [selected,setSelected]=useState<{source:string;id:string}|null>(null);
   const [validation,setValidation]=useState<string|null>(null);
-  const options=usePoll(async signal=>({...(await api.handOptions(draft.player,signal)),player:draft.player}),[draft.player],0);
-  const available=options.data?.player===draft.player?options.data:null;
   const {data,error,loading,reload}=usePoll(async signal=>{
     const [hands,imports]=await Promise.all([api.hands({...filters,cursor} satisfies HandFilters,signal),api.imports(null,signal)]);
     const revision=JSON.stringify(imports.items.filter(job=>job.status!=='queued'&&job.status!=='processing').map(job=>[job.job_id,job.status,job.counts]))+hands.total;
     return {hands,revision};
   },[JSON.stringify(filters),cursor]);
+  const options=usePoll(async signal=>({...(await api.handOptions(draft.player,signal)),player:draft.player}),[draft.player,data?.revision],0);
+  const available=options.data?.player===draft.player?options.data:null;
   const observedRevision=useRef<string|null>(null);
   useEffect(()=>{
     if(data&&observedRevision.current!==data.revision){

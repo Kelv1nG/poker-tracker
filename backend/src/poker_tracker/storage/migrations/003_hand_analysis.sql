@@ -11,6 +11,9 @@ WITH pre AS (
  SELECT h.source_id,h.hand_id,
  (SELECT count(*) FROM deals d WHERE d.source_id=h.source_id AND d.hand_id=h.hand_id) AS dealt_count,
  (SELECT count(*) FROM hand_phases f WHERE f.source_id=h.source_id AND f.hand_id=h.hand_id AND f.name='Preflop')=1
+ AND NOT EXISTS (SELECT 1 FROM hand_events e WHERE e.source_id=h.source_id AND e.hand_id=h.hand_id
+ AND e.type='action' AND e.action_code IN ('CALL','RAISE','BET','CHECK','FOLD') AND NOT EXISTS
+ (SELECT 1 FROM deals d WHERE d.source_id=e.source_id AND d.hand_id=e.hand_id AND d.player=e.player))
  AND NOT EXISTS (SELECT 1 FROM pre e WHERE e.source_id=h.source_id AND e.hand_id=h.hand_id AND
  ((e.action='Was dealt' AND (json_array_length(e.cards)<>2 OR NOT EXISTS
  (SELECT 1 FROM hand_players p WHERE p.source_id=e.source_id AND p.hand_id=e.hand_id AND p.name=e.player)))
@@ -37,7 +40,13 @@ WITH pre AS (
  WHERE d.player NOT IN (b.sb,b.bb)
 ), orbit AS (
  SELECT b.source_id,b.hand_id,count(o.player) AS acted_nonblinds,max(o.first_action) AS last_nonblind,
- (SELECT min(d.first_action) FROM decisions d WHERE d.source_id=b.source_id AND d.hand_id=b.hand_id AND d.player IN (b.sb,b.bb)) AS first_blind
+ (SELECT min(d.first_action) FROM decisions d WHERE d.source_id=b.source_id AND d.hand_id=b.hand_id AND d.player IN (b.sb,b.bb)) AS first_blind,
+ (SELECT min(d.first_action) FROM decisions d WHERE d.source_id=b.source_id AND d.hand_id=b.hand_id AND d.player=b.sb) AS sb_first,
+ (SELECT min(d.first_action) FROM decisions d WHERE d.source_id=b.source_id AND d.hand_id=b.hand_id AND d.player=b.bb) AS bb_first,
+ (SELECT count(*) FROM decisions d WHERE d.source_id=b.source_id AND d.hand_id=b.hand_id) AS first_decisions,
+ (SELECT count(*) FROM pre e WHERE e.source_id=b.source_id AND e.hand_id=b.hand_id AND e.type='action'
+ AND e.action_code IN ('CALL','RAISE','BET','CHECK','FOLD') AND e.ordinal<=(
+ SELECT max(d.first_action) FROM decisions d WHERE d.source_id=b.source_id AND d.hand_id=b.hand_id)) AS prefix_actions
  FROM blinds b LEFT JOIN ordered o USING(source_id,hand_id) GROUP BY b.source_id,b.hand_id,b.sb,b.bb
 ), facts AS (
  SELECT h.source_id,h.hand_id,h.table_name,h.started_at_local,p.name AS player,p.ordinal AS player_ordinal,
@@ -55,6 +64,7 @@ WITH pre AS (
  CASE WHEN b.sb_count=1 AND p.name=b.sb AND a.player IS NOT NULL THEN 'SB'
  WHEN b.bb_count=1 AND p.name=b.bb AND a.player IS NOT NULL THEN 'BB'
  WHEN r.consistent AND r.dealt_count BETWEEN 3 AND 6 AND b.sb_count=1 AND b.bb_count=1 AND b.sb<>b.bb
+ AND o.prefix_actions=o.first_decisions AND (o.sb_first IS NULL OR o.bb_first IS NULL OR o.sb_first<o.bb_first)
  AND o.acted_nonblinds=r.dealt_count-2 AND o.last_nonblind<coalesce(o.first_blind,2147483647)
  THEN CASE n.reverse_order WHEN 1 THEN 'BTN' WHEN 2 THEN 'CO' WHEN 3 THEN 'HJ' WHEN 4 THEN 'UTG' ELSE 'UNKNOWN' END
  ELSE 'UNKNOWN' END AS position,

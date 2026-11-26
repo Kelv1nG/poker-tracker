@@ -123,3 +123,38 @@ def test_existing_database_gains_view_without_reimport(tmp_path,preflop_hand):
         assert con.execute('SELECT payload_hash,payload FROM hands').fetchall()==before
         assert con.execute('SELECT count(*) FROM player_hand_analysis WHERE player_dealt').fetchone()==(2,)
     database.close()
+
+
+def test_later_street_undealt_actor_makes_roster_unknown(tmp_path,preflop_hand):
+    hand=copy.deepcopy(preflop_hand)
+    hand['players'].append(dict(name='Observer',starting_balance='$5',net_result='$0',final_hand=[]))
+    hand['phases'].append(dict(name='Flop',board=['2c','3d','4h'],new_cards=['2c','3d','4h'],events=[dict(type='action',player='Observer',action='Check',action_code='CHECK',amount=None,cards=[])]))
+    result=facts(tmp_path,hand)
+    assert result['Observer']['game_type']=='UNKNOWN'
+    assert result['Observer']['dealt_player_count'] is None
+    assert result['Observer']['player_dealt'] is None
+    assert result['Tassadar']['player_dealt'] is True
+
+
+@pytest.mark.parametrize('change',['repeat','swapped_blinds'])
+def test_contradictory_first_orbit_does_not_infer_nonblind_positions(tmp_path,preflop_hand,change):
+    hand=orbit(preflop_hand,4);events=hand['phases'][0]['events']
+    if change=='repeat':
+        events.insert(7,dict(type='action',player='P0',action='Raise',action_code='RAISE',amount='1',cards=[]))
+    else:events[-2],events[-1]=events[-1],events[-2]
+    result=facts(tmp_path,hand)
+    assert result['P0']['position']=='UNKNOWN'
+    assert result['P1']['position']=='UNKNOWN'
+    assert result['SB']['position']=='SB'
+    assert result['BB']['position']=='BB'
+
+
+def test_all_in_blind_without_voluntary_decision_does_not_break_valid_orbit(tmp_path,preflop_hand):
+    hand=orbit(preflop_hand,4)
+    hand['players'][0]['starting_balance']='$0.02'
+    hand['phases'][0]['events']=[e for e in hand['phases'][0]['events'] if not(e.get('player')=='SB' and e.get('action_code')=='CALL')]
+    result=facts(tmp_path,hand)
+    assert result['P0']['position']=='CO'
+    assert result['P1']['position']=='BTN'
+    assert result['SB']['preflop_spot']=='No decision'
+    assert result['SB']['nominal_sb'] is None
