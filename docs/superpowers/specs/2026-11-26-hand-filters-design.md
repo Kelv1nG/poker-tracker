@@ -1,6 +1,6 @@
 # Player-focused hand list and basic filters
 
-Status: proposed design for review. This extends the existing local prototype.
+Status: approved by the user for implementation on November 26, 2026 ("just do it we can iterate after"). This extends the existing local prototype.
 
 ## Intent and decisions
 
