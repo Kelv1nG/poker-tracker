@@ -55,6 +55,9 @@ observers are excluded for a selected player until **Include listed players…**
 checked. Ambiguous participation, stakes and inferred positions remain Unknown.
 SB includes the HU button; BTN means a separate button with 3+ dealt players. The
 compact grid scrolls horizontally for its remaining columns on narrow screens.
+Click **Date** or **Net won** in the grid header to toggle descending/ascending order
+across all matching hands. The arrow shows the active order; sorting resets pagination
+and preserves other filter drafts. Net won requires an applied player selection.
 
 Net amounts stay exact and preserve their original display. Numeric net bounds and
 net sorting require one money context; select a unit when contexts are mixed.

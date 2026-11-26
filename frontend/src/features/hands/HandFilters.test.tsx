@@ -108,3 +108,73 @@ test('refreshes new money units after an import without overwriting filter draft
   await waitFor(()=>expect(within(screen.getByLabelText('Money unit')).getByText('PHP (₱)')).toBeInTheDocument(),{timeout:2500});
   expect(screen.getByLabelText('Table name')).toHaveValue('Draft table');
 });
+
+test('Net won header sorts the full result set both ways and resets the page',async()=>{
+  const {requests,user}=setup();render(<HandsPage/>);
+  await screen.findByRole('button',{name:/Open Reading hand/});
+  await user.click(screen.getByRole('button',{name:'Next hands'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('cursor')).toBe('second'));
+  await user.click(screen.getByRole('button',{name:'Net won'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('net_desc'));
+  expect(requests.at(-1)?.get('player')).toBe('Tassadar');
+  expect(requests.at(-1)?.has('cursor')).toBe(false);
+  expect(screen.getByRole('columnheader',{name:'Net won'})).toHaveAttribute('aria-sort','descending');
+  expect(screen.getByLabelText('Sort')).toHaveValue('net_desc');
+  await user.click(screen.getByRole('button',{name:'Net won'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('net_asc'));
+  expect(screen.getByRole('columnheader',{name:'Net won'})).toHaveAttribute('aria-sort','ascending');
+});
+
+test('Date header toggles order and shares the applied sort with More filters',async()=>{
+  const {requests,user}=setup();render(<HandsPage/>);
+  await screen.findByRole('button',{name:/Open Reading hand/});
+  expect(screen.getByRole('columnheader',{name:'Date (printed)'})).toHaveAttribute('aria-sort','descending');
+  await user.click(screen.getByRole('button',{name:'Date (printed)'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('date_asc'));
+  expect(screen.getByRole('columnheader',{name:'Date (printed)'})).toHaveAttribute('aria-sort','ascending');
+  await user.click(screen.getByText('More filters'));
+  await user.selectOptions(screen.getByLabelText('Sort'),'net_asc');
+  await user.click(screen.getByRole('button',{name:'Apply filters'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('net_asc'));
+  expect(screen.getByRole('columnheader',{name:'Net won'})).toHaveAttribute('aria-sort','ascending');
+  expect(screen.getByRole('columnheader',{name:'Date (printed)'})).not.toHaveAttribute('aria-sort');
+  await user.click(screen.getByRole('button',{name:'Date (printed)'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('date_desc'));
+});
+
+test('header sorting preserves unapplied drafts and current applied filters',async()=>{
+  const {requests,user}=setup();render(<HandsPage/>);
+  await screen.findByRole('button',{name:/Open Reading hand/});
+  await user.selectOptions(screen.getByLabelText('Game type'),'HU');
+  await user.click(screen.getByRole('button',{name:'Apply filters'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('game_type')).toBe('HU'));
+  await user.type(screen.getByLabelText('Table name'),'Unapplied table');
+  await user.click(screen.getByRole('button',{name:'Net won'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('net_desc'));
+  expect(requests.at(-1)?.get('game_type')).toBe('HU');
+  expect(requests.at(-1)?.has('table_name')).toBe(false);
+  expect(screen.getByLabelText('Table name')).toHaveValue('Unapplied table');
+});
+
+test('Net won sorting guides a mixed-unit selection and does not silently compare currencies',async()=>{
+  const {requests,user}=setup('Tassadar',true);render(<HandsPage/>);
+  await screen.findByRole('button',{name:/Open Reading hand/});
+  await user.click(screen.getByRole('button',{name:'Net won'}));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Select a money unit');
+  expect(screen.getByLabelText('Money unit').closest('details')).toHaveAttribute('open');
+  expect(screen.getByLabelText('Money unit')).toHaveFocus();
+  expect(requests.at(-1)?.get('sort')).toBe('date_desc');
+  await user.selectOptions(screen.getByLabelText('Money unit'),'peso');
+  await user.click(screen.getByRole('button',{name:'Net won'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('net_desc'));
+  expect(requests.at(-1)?.get('unit')).toBe('peso');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+test('Net won header requires an applied player while Date works in all-hands mode',async()=>{
+  const {requests,user}=setup(null);render(<HandsPage/>);
+  await screen.findByRole('button',{name:/Open Reading hand/});
+  expect(screen.getByRole('button',{name:'Net won'})).toBeDisabled();
+  await user.click(screen.getByRole('button',{name:'Date (printed)'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('date_asc'));
+});

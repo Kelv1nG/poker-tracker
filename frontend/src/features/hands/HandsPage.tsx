@@ -21,6 +21,8 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
   const [cursors,setCursors]=useState<(string|null)[]>([null]);const cursor=cursors.at(-1)??null;
   const [selected,setSelected]=useState<{source:string;id:string}|null>(null);
   const [validation,setValidation]=useState<string|null>(null);
+  const moreFilters=useRef<HTMLDetailsElement>(null);
+  const moneyUnit=useRef<HTMLSelectElement>(null);
   const {data,error,loading,reload}=usePoll(async signal=>{
     const [hands,imports]=await Promise.all([api.hands({...filters,cursor} satisfies HandFilters,signal),api.imports(null,signal)]);
     const revision=JSON.stringify(imports.items.filter(job=>job.status!=='queued'&&job.status!=='processing').map(job=>[job.job_id,job.status,job.counts]))+hands.total;
@@ -38,13 +40,31 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
   function field<K extends keyof Draft>(key:K,value:Draft[K]){setDraft(old=>({...old,[key]:value,...(key==='action'&&!value?{street:''}:{})}));}
   const actor=Boolean(draft.player);
   function select(label:string,key:keyof Draft,choices:[string,string][],disabled=false) {
-    return <label>{label}<select value={String(draft[key])} disabled={disabled} onChange={e=>field(key,e.target.value as never)}>{choices.map(([value,name])=><option key={value} value={value}>{name}</option>)}</select></label>;
+    return <label>{label}<select ref={key==='unit'?moneyUnit:undefined} value={String(draft[key])} disabled={disabled} onChange={e=>field(key,e.target.value as never)}>{choices.map(([value,name])=><option key={value} value={value}>{name}</option>)}</select></label>;
   }
   function apply(event:React.SubmitEvent<HTMLFormElement>){
     event.preventDefault();setValidation(null);
     if(draft.from&&draft.to&&draft.from>draft.to){setValidation('From must be earlier than or equal to To.');return;}
     if(actor&&(draft.net_min||draft.net_max||draft.sort.startsWith('net_'))&&!draft.unit&&(available?.units.length??0)>1){setValidation('Select a money unit before numeric bounds or money sorting.');return;}
     setFilters({...draft});setCursors([null]);setSelected(null);reload();
+  }
+  function sortColumn(column:'date'|'net') {
+    const sort=filters.sort===`${column}_desc`?`${column}_asc`:`${column}_desc`;
+    let unit=filters.unit;
+    if(column==='net') {
+      if(!filters.player||draft.player!==filters.player||!available)return;
+      unit=draft.unit||filters.unit;
+      if(available.units.length>1&&!unit) {
+        setValidation('Select a money unit under More filters, then click Net won again.');
+        if(moreFilters.current)moreFilters.current.open=true;
+        moneyUnit.current?.focus();
+        return;
+      }
+    }
+    setValidation(null);
+    setFilters(old=>({...old,sort,unit}));
+    setDraft(old=>({...old,sort,...(column==='net'?{unit}:{})}));
+    setCursors([null]);setSelected(null);reload();
   }
   return <>
     <div className="page-heading"><div><h1>Hands</h1><p className="muted">{filters.player?<>Reviewing <strong>{filters.player}</strong></>:'Select a player to see cards, results and betting lines.'}</p></div>{data&&<span className="library-count">{data.hands.total.toLocaleString()} hands</span>}</div>
@@ -58,7 +78,7 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
         {select('Player action','action',[['','Any action'],['RAISE','Raise'],['CALL','Call'],['BET','Bet'],['CHECK','Check'],['FOLD','Fold']],!actor)}
       </div>
       <label className="checkbox-label"><input type="checkbox" checked={draft.include_not_dealt} disabled={!actor} onChange={e=>field('include_not_dealt',e.target.checked)}/>Include listed players who were not dealt in (also includes unknown participation)</label>
-      <details className="extra-filters"><summary>More filters</summary><div className="form-grid">
+      <details className="extra-filters" ref={moreFilters}><summary>More filters</summary><div className="form-grid">
         <label>From (printed time)<input type="datetime-local" step={60} value={draft.from} onChange={e=>field('from',e.target.value)}/></label>
         <label>To (printed time)<input type="datetime-local" step={60} value={draft.to} onChange={e=>field('to',e.target.value)}/></label>
         <label>Table name<input value={draft.table_name} onChange={e=>field('table_name',e.target.value)} placeholder="Exact table name"/></label>
@@ -75,11 +95,30 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
     {validation&&<p role="alert" className="error">{validation}</p>}{error&&<p role="alert" className="error">{error} <button onClick={reload}>Try again</button></p>}
     {!data&&!error&&<p role="status">Loading hands…</p>}
     {data&&<>
-      {data.hands.items.length?<div className="table-scroll hand-grid" role="region" aria-label="Hand grid, scroll horizontally for all columns" tabIndex={0} aria-busy={loading}><table aria-label="Hand results"><thead><tr>{['Date (printed)','Cards','Preflop','Board','Line','Net won','Position','Blinds','Dealt players','Stack','Table'].map(label=><th key={label}>{label}</th>)}</tr></thead><tbody>{data.hands.items.map(hand=><HandRow key={`${hand.source_id}:${hand.hand_id}`} hand={hand} actor={Boolean(filters.player)} selected={selected?.id===hand.hand_id&&selected?.source===hand.source_id} open={()=>setSelected({source:hand.source_id,id:hand.hand_id})}/>)}</tbody></table></div>:<div className="empty"><h2>No hands found</h2><p className="muted">Import a JSON export or adjust the filters.</p><a href="#imports">Go to Imports</a></div>}
+      {data.hands.items.length?<div className="table-scroll hand-grid" role="region" aria-label="Hand grid, scroll horizontally for all columns" tabIndex={0} aria-busy={loading}><table aria-label="Hand results"><thead><tr>
+        <SortHeader label="Date (printed)" column="date" sort={filters.sort} onSort={()=>sortColumn('date')}/>
+        {['Cards','Preflop','Board','Line'].map(label=><th scope="col" key={label}>{label}</th>)}
+        <SortHeader label="Net won" column="net" sort={filters.sort} onSort={()=>sortColumn('net')}
+          disabled={!filters.player||draft.player!==filters.player||!available}
+          reason={!filters.player||draft.player!==filters.player?'Select a player and apply filters to sort net won.':!available?'Loading money units…':undefined}/>
+        {['Position','Blinds','Dealt players','Stack','Table'].map(label=><th scope="col" key={label}>{label}</th>)}
+      </tr></thead><tbody>{data.hands.items.map(hand=><HandRow key={`${hand.source_id}:${hand.hand_id}`} hand={hand} actor={Boolean(filters.player)} selected={selected?.id===hand.hand_id&&selected?.source===hand.source_id} open={()=>setSelected({source:hand.source_id,id:hand.hand_id})}/>)}</tbody></table></div>:<div className="empty"><h2>No hands found</h2><p className="muted">Import a JSON export or adjust the filters.</p><a href="#imports">Go to Imports</a></div>}
       {(cursors.length>1||data.hands.next_cursor)&&<div className="pagination"><button disabled={loading||cursors.length===1} onClick={()=>setCursors(old=>old.slice(0,-1))}>Previous hands</button><button disabled={loading||!data.hands.next_cursor} onClick={()=>setCursors(old=>[...old,data.hands.next_cursor])}>Next hands</button></div>}
     </>}
     {selected&&<HandDetails key={`${selected.source}:${selected.id}`} source={selected.source} id={selected.id} onClose={()=>setSelected(null)}/>}
   </>;
+}
+
+function SortHeader({label,column,sort,onSort,disabled=false,reason}:{label:string;column:'date'|'net';sort:string;onSort:()=>void;disabled?:boolean;reason?:string}) {
+  const active=sort.startsWith(`${column}_`);
+  const ascending=sort.endsWith('_asc');
+  const nextAscending=active&&!ascending;
+  const title=reason??(column==='net'?`Sort net won ${nextAscending?'lowest':'highest'} first`:`Sort date ${nextAscending?'oldest':'newest'} first`);
+  return <th scope="col" className={column==='net'?'numeric':undefined} aria-sort={active?(ascending?'ascending':'descending'):undefined}>
+    <button type="button" className="column-sort" onClick={onSort} disabled={disabled} title={title}>
+      {label}<span aria-hidden="true">{active?(ascending?'↑':'↓'):'↕'}</span>
+    </button>
+  </th>;
 }
 
 function HandRow({hand:h,actor,selected,open}:{hand:HandSummary;actor:boolean;selected:boolean;open:()=>void}) {

@@ -11,7 +11,13 @@ without changing that setting. With no hero, the all-hands browser remains avail
 Apply filters together: game type, result, nominal stakes, primary position and player
 betting action. More filters contains printed date bounds, exact table, action street,
 exact net bounds, money context and date/net ordering. Changing the query resets its
-keyset pagination. New completed imports refresh options and preserve drafts.
+keyset pagination. New completed imports refresh options and preserve drafts. Date and Net won
+headers also apply sorting immediately: the first click on a new column is descending,
+then further clicks alternate ascending/descending. Sort arrows and screen-reader
+`aria-sort` reflect the applied query, and the More filters dropdown stays synchronized.
+Header sorting keeps active predicates and pending drafts; an un-applied player change
+must be applied before sorting Net won. If money contexts are mixed, the header opens
+More filters and focuses the required unit selector.
 
 The grid shows printed date, private cards, preflop situation, both boards, ordered
 street lines, original net display, position, blind posts, dealt count, starting stack
@@ -93,3 +99,14 @@ so inference is labelled); implicit-unit cursor policy (a newly mixed context re
 selection); adversarial deeply nested token hardening (no demonstrated ordinary local
 use failure, no advanced parser-hardening claim). These do not add seat analytics,
 HUD, replay, sessions, EV/equity or advanced statistics to this iteration.
+
+## Column-header sorting follow-up
+
+Added Date/Net won header buttons over the existing server-side sorting contract;
+no database changes or reimport. Five new regressions cover direction toggles, global
+query/pagination reset, dropdown synchronization, unapplied drafts, mixed units and
+all-hands mode. Frontend suite: 24 tests pass; production build passes. Existing backend
+filter/sort integration tests: 23 pass. Production Firefox checks at 1280px and a true
+390px viewport pass, including header clicks rendering actual ASGI-sorted largest
+($34.86) and smallest (-$20.45) results from the disposable sample library. The original full-suite evidence above
+precedes this UI-only follow-up.
