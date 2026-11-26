@@ -1,6 +1,6 @@
 # Local tracker implementation handoff — November 26, 2026
 
-The backend core is implemented. The web application is not yet runnable.
+Historical checkpoint: the backend core was implemented at this stage. The complete local prototype is now runnable; see [the final handoff](2026-11-26-local-prototype.md).
 
 ## Implemented and verified
 

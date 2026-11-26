@@ -1,6 +1,6 @@
 # Local Poker Tracker: ingestion and first UI
 
-Status: approved for implementation on November 26, 2026. The Imports screen preview was accepted; implementation is in progress.
+Status: implemented as a local prototype on November 26, 2026. See the implementation plan and final handoff for validation and remaining limits.
 
 ## Intent and agreed direction
 
@@ -16,7 +16,7 @@ The approved visual direction is `docs/previews/local-imports.html`; `docs/previ
 | Local PostgreSQL with browser UI | Strong transactional server and concurrent clients; requires installing and operating a database service | Valid alternative, unnecessary setup for the agreed initial use |
 | Hosted application with local import agent | Enables access from other devices; adds hosting, authentication, and a second installed component for folder watching | User excluded hosting from the current scope |
 
-The user selected local execution. Python, React, and DuckDB are proposed implementation choices, not a development/production database switch. The application uses DuckDB during development and normal local use.
+The user selected local execution. Python, React, and DuckDB are the selected implementation choices, not a development/production database switch. The application uses DuckDB during development and normal local use.
 
 ## First release
 
