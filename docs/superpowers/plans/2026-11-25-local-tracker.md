@@ -15,7 +15,7 @@
 All seven tasks are implemented. The local prototype includes Imports/settings,
 Hand browsing, Overview, upload/directory ingestion, recovery and `make run`.
 
-Final checks: 115 backend tests, 13 UI tests and 41 acquisition tests; production
+Final checks: 122 backend tests, 13 UI tests and 41 acquisition tests; production
 TypeScript/Vite build; actual 1,145-hand API import/reimport and a real directory
 created-file check. Firefox production-bundle inspection passed at 1280px and
 390px, including navigation, filters, capture metadata, both runouts and overflow.
@@ -26,7 +26,8 @@ production DOM. Live browser-to-server socket verification remains for the user'
 normal terminal. This is a documented verification limit, not an unimplemented UI.
 
 Independent final review's four material findings were reproduced and fixed.
-History offset-pagination drift under new arrivals is a documented deferred minor.
+The deferred history-pagination drift issue was fixed on the user's resume request;
+history now uses timestamp/job-ID keyset cursors with regression coverage.
 See `docs/handoffs/2026-11-26-local-prototype.md` for handoff and decisions.
 
 ## Global Constraints

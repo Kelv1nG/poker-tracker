@@ -17,7 +17,7 @@ stop the application and back up that whole directory for database and archives.
 
 ## Evidence and limits
 
-- 115 backend and 13 frontend tests, plus the existing 41 acquisition tests pass.
+- 122 backend and 13 frontend tests, plus the existing 41 acquisition tests pass.
 - Production build and dependency consistency checks pass; the backend wheel contains
   both migrations, bounded intake and the currency validation data.
 - Actual 1,145-hand JSON through the API: 1,145 new then 1,145 duplicates. Exact archive
@@ -31,9 +31,9 @@ stop the application and back up that whole directory for database and archives.
   [narrow](../previews/local-tracker-imports-390.png).
 - The runner forbids loopback sockets. Live HTTP/browser connection testing cannot
   be performed here; the real ASGI app and production UI were checked independently.
-- One minor remains: a new import arriving between history pages can repeat an
-  attempt on the next page. Refresh to return to the first page. Canonical data and
-  keyset hand pagination are unaffected.
+- The previously deferred history-pagination issue is fixed. History now uses
+  timestamp/job-ID boundaries, so new arrivals cannot shift attempts between pages.
+  Equal timestamps and malformed cursor handling have regression coverage.
 - Advanced player statistics, sessions, equity, replay, HUD and multiple backend
   processes are outside this prototype's scope.
 

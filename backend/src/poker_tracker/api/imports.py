@@ -1,3 +1,6 @@
+import base64
+import json
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
@@ -12,6 +15,28 @@ from .upload import upload_form
 
 router = APIRouter()
 Limit = Annotated[int, Query(ge=1,le=200)]
+
+
+def _history_cursor(created_at,job_id):
+    value=json.dumps([created_at.isoformat(timespec='microseconds'),job_id],separators=(',',':'))
+    return base64.urlsafe_b64encode(value.encode()).decode()
+
+
+def _history_position(cursor):
+    if cursor is None:
+        return None
+    try:
+        if len(cursor)>512:
+            raise ValueError()
+        values=json.loads(base64.b64decode(cursor,altchars=b'-_',validate=True))
+        if not isinstance(values,list) or len(values)!=2 or not all(isinstance(value,str) for value in values):
+            raise ValueError()
+        created_at=datetime.fromisoformat(values[0])
+        if created_at.tzinfo is not None or 'T' not in values[0]:
+            raise ValueError()
+        return [created_at,str(UUID(values[1]))]
+    except (TypeError,ValueError,UnicodeError) as exc:
+        raise HTTPException(422,'Invalid import history cursor') from exc
 
 
 @router.post('/imports')
@@ -34,13 +59,15 @@ async def upload(request: Request):
 
 @router.get('/imports')
 def history(request: Request, limit: Limit=50, cursor: str | None=None):
-    offset = page_offset(cursor)
+    position=_history_position(cursor)
     with request.app.state.runtime.importer.database.read_connection() as con:
         total = con.execute('SELECT count(*) FROM import_jobs').fetchone()[0]
-        identifiers = con.execute('SELECT job_id FROM import_jobs ORDER BY created_at DESC,job_id DESC LIMIT ? OFFSET ?',
-                                  [limit,offset]).fetchall()
-        items = [json_ready(Repository.get_job(con,r[0])) for r in identifiers]
-    return json_response(page(items,total,offset,limit))
+        condition='WHERE (created_at,job_id) < (?, ?)' if position is not None else ''
+        rows=con.execute(f'''SELECT job_id,created_at FROM import_jobs {condition}
+            ORDER BY created_at DESC,job_id DESC LIMIT ?''',[*(position or []),limit+1]).fetchall()
+        items = [json_ready(Repository.get_job(con,r[0])) for r in rows[:limit]]
+    next_cursor=_history_cursor(rows[limit-1][1],rows[limit-1][0]) if len(rows)>limit else None
+    return json_response({'items':items,'total':total,'next_cursor':next_cursor})
 
 
 @router.get('/imports/{job_id}')

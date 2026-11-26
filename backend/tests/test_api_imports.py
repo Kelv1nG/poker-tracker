@@ -128,3 +128,67 @@ def test_streaming_upload_limit_prevents_unbounded_spooling_and_closes_files(tmp
     assert consumed< len(body)
     if not length_header:assert opened and written
     assert list(tmp_path.rglob('*.json'))==[]
+
+
+def test_history_pagination_does_not_repeat_attempts_when_new_imports_arrive(tmp_path):
+    app=create_app(Settings(tmp_path))
+    with TestClient(app) as client:
+        app.state.runtime.worker.stop()
+
+        def add(filename,created_at):
+            raw=json.dumps({'schema_version':1,'hands':[],'batch':filename}).encode()
+            response=client.post('/api/imports',files={'file':(filename,raw)})
+            assert response.status_code==202
+            job_id=response.json()['job_id']
+            with app.state.runtime.importer.database.write_transaction() as con:
+                con.execute('UPDATE import_jobs SET created_at=? WHERE job_id=?',[created_at,job_id])
+            return job_id
+
+        older=add('older.json','2026-11-25T00:00:00')
+        middle=add('middle.json','2026-11-25T00:01:00')
+        first=client.get('/api/imports',params={'limit':1}).json()
+        assert first['items'][0]['job_id']==middle
+        assert first['next_cursor']
+        newest=add('newest.json','2026-11-25T00:02:00')
+        second=client.get('/api/imports',params={'limit':1,'cursor':first['next_cursor']}).json()
+        assert [job['job_id'] for job in second['items']]==[older]
+        assert second['next_cursor'] is None
+        assert second['total']==3
+        assert client.get('/api/imports',params={'limit':1}).json()['items'][0]['job_id']==newest
+
+
+def test_history_cursor_breaks_timestamp_ties_without_skipping_attempts(tmp_path):
+    app=create_app(Settings(tmp_path))
+    with TestClient(app) as client:
+        app.state.runtime.worker.stop()
+        identifiers=[]
+        for index in range(3):
+            raw=json.dumps({'schema_version':1,'hands':[],'batch':index}).encode()
+            response=client.post('/api/imports',files={'file':(f'{index}.json',raw)})
+            identifiers.append(response.json()['job_id'])
+        with app.state.runtime.importer.database.write_transaction() as con:
+            con.execute("UPDATE import_jobs SET created_at='2026-11-25T00:00:00.123456'")
+        cursor=None;seen=[]
+        while True:
+            params={'limit':1}
+            if cursor:params['cursor']=cursor
+            page=client.get('/api/imports',params=params).json()
+            seen.extend(job['job_id'] for job in page['items'])
+            cursor=page['next_cursor']
+            if cursor is None:break
+            assert len(seen)<4
+        assert seen==sorted(identifiers,reverse=True)
+
+
+@pytest.mark.parametrize('payload',[
+    'offset:1','[]','["2026-11-25T00:00:00","not-a-uuid"]',
+    '["not-a-time","00000000-0000-4000-8000-000000000001"]',
+    '["2026-11-25T00:00:00+08:00","00000000-0000-4000-8000-000000000001"]',
+])
+def test_history_rejects_invalid_keyset_cursors(tmp_path,payload):
+    import base64
+    cursor=base64.urlsafe_b64encode(payload.encode()).decode()
+    with TestClient(create_app(Settings(tmp_path))) as client:
+        response=client.get('/api/imports',params={'cursor':cursor})
+        assert response.status_code==422
+        assert 'detail' in response.json()
