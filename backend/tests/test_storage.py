@@ -18,7 +18,7 @@ def test_migrations_restart_and_transaction_rollback(tmp_path):
     restarted = Database(path)
     with restarted.read_connection() as con:
         assert con.execute('SELECT * FROM app_settings').fetchall() == [('hero_name', '"Tassadar"')]
-        assert con.execute('SELECT version FROM schema_migrations ORDER BY version').fetchall() == [(1,), (2,)]
+        assert con.execute('SELECT version FROM schema_migrations ORDER BY version').fetchall() == [(1,), (2,), (3,)]
 
 
 def test_threads_get_independent_connections(tmp_path):
