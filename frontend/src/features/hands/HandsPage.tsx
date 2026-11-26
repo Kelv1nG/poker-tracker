@@ -4,6 +4,7 @@ import type { HandFilters, HandSummary } from '../../api/contracts';
 import { usePoll } from '../../api/usePoll';
 import { HandDetails } from './HandDetails';
 import { Cards } from './Cards';
+import { ReviewTotals, PositionSummary } from './ReviewSummary';
 
 const defaults=(player='')=>({player,include_not_dealt:false,from:'',to:'',table_name:'',game_type:'',result:'',position:'',action:'',street:'',net_min:'',net_max:'',unit:'',stake:'',sort:'date_desc'});
 type Draft=ReturnType<typeof defaults>;
@@ -23,11 +24,12 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
   const [validation,setValidation]=useState<string|null>(null);
   const moreFilters=useRef<HTMLDetailsElement>(null);
   const moneyUnit=useRef<HTMLSelectElement>(null);
-  const {data,error,loading,reload}=usePoll(async signal=>{
+  const {data:loaded,error,loading,reload}=usePoll(async signal=>{
     const [hands,imports]=await Promise.all([api.hands({...filters,cursor} satisfies HandFilters,signal),api.imports(null,signal)]);
     const revision=JSON.stringify(imports.items.filter(job=>job.status!=='queued'&&job.status!=='processing').map(job=>[job.job_id,job.status,job.counts]))+hands.total;
-    return {hands,revision};
+    return {hands,revision,queryKey:JSON.stringify(filters)};
   },[JSON.stringify(filters),cursor]);
+  const data=loaded?.queryKey===JSON.stringify(filters)?loaded:null;
   const options=usePoll(async signal=>({...(await api.handOptions(draft.player,signal)),player:draft.player}),[draft.player,data?.revision],0);
   const available=options.data?.player===draft.player?options.data:null;
   const observedRevision=useRef<string|null>(null);
@@ -47,6 +49,11 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
     if(draft.from&&draft.to&&draft.from>draft.to){setValidation('From must be earlier than or equal to To.');return;}
     if(actor&&(draft.net_min||draft.net_max||draft.sort.startsWith('net_'))&&!draft.unit&&(available?.units.length??0)>1){setValidation('Select a money unit before numeric bounds or money sorting.');return;}
     setFilters({...draft});setCursors([null]);setSelected(null);reload();
+  }
+  function choosePosition(position:string,unit?:string) {
+    setFilters(old=>({...old,position,...(unit?{unit}:{})}));
+    setDraft(old=>({...old,position,...(unit?{unit}:{})}));
+    setCursors([null]);setSelected(null);setValidation(null);reload();
   }
   function sortColumn(column:'date'|'net') {
     const sort=filters.sort===`${column}_desc`?`${column}_asc`:`${column}_desc`;
@@ -94,6 +101,10 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
     {options.error&&<p role="alert" className="error">Filter options: {options.error} <button onClick={options.reload}>Retry options</button></p>}
     {validation&&<p role="alert" className="error">{validation}</p>}{error&&<p role="alert" className="error">{error} <button onClick={reload}>Try again</button></p>}
     {!data&&!error&&<p role="status">Loading hands…</p>}
+    {data&&<ReviewTotals review={data.hands.review} total={data.hands.total} hasPlayer={Boolean(filters.player)}/>}
+    <div className={`review-workspace ${filters.player?'':'all-hands-workspace'}`}>
+      {filters.player&&<PositionSummary review={data?.hands.review} selectedPosition={filters.position} onPosition={choosePosition}/>}
+      <div className="review-hand-area">
     {data&&<>
       {data.hands.items.length?<div className="table-scroll hand-grid" role="region" aria-label="Hand grid, scroll horizontally for all columns" tabIndex={0} aria-busy={loading}><table aria-label="Hand results"><thead><tr>
         <SortHeader label="Date (printed)" column="date" sort={filters.sort} onSort={()=>sortColumn('date')}/>
@@ -105,7 +116,10 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
       </tr></thead><tbody>{data.hands.items.map(hand=><HandRow key={`${hand.source_id}:${hand.hand_id}`} hand={hand} actor={Boolean(filters.player)} selected={selected?.id===hand.hand_id&&selected?.source===hand.source_id} open={()=>setSelected({source:hand.source_id,id:hand.hand_id})}/>)}</tbody></table></div>:<div className="empty"><h2>No hands found</h2><p className="muted">Import a JSON export or adjust the filters.</p><a href="#imports">Go to Imports</a></div>}
       {(cursors.length>1||data.hands.next_cursor)&&<div className="pagination"><button disabled={loading||cursors.length===1} onClick={()=>setCursors(old=>old.slice(0,-1))}>Previous hands</button><button disabled={loading||!data.hands.next_cursor} onClick={()=>setCursors(old=>[...old,data.hands.next_cursor])}>Next hands</button></div>}
     </>}
-    {selected&&<HandDetails key={`${selected.source}:${selected.id}`} source={selected.source} id={selected.id} onClose={()=>setSelected(null)}/>}
+    {selected&&<HandDetails key={`${selected.source}:${selected.id}`} source={selected.source} id={selected.id} hero={filters.player||null} onClose={()=>setSelected(null)}/>}
+    {!selected&&data&&data.hands.items.length>0&&<p className="muted replay-empty">Select a table-name link to replay a hand.</p>}
+      </div>
+    </div>
   </>;
 }
 

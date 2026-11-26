@@ -24,6 +24,8 @@ function server(payload=twice,{empty=false,fail=false}={}) {
 test('selects a hand and renders both complete runouts, system event and all showdowns',async()=>{
   server();window.location.hash='hands';const user=userEvent.setup();render(<App />);
   await user.click(await screen.findByRole('button',{name:/Open Apple Valley hand/}));
+  await screen.findByRole('region',{name:'Hand replay'});
+  await user.click(screen.getByText('Full hand history and sources'));
   const river=await screen.findByRole('region',{name:'River 4'});
   for(const card of ['5 of diamonds','King of hearts','2 of diamonds','10 of clubs','8 of spades'])expect(within(river).getAllByRole('img',{name:card}).length).toBeGreaterThan(0);
   const second=screen.getByRole('region',{name:'Table Cards Dealt 7'});
@@ -40,6 +42,8 @@ test('selects a hand and renders both complete runouts, system event and all sho
 test('renders early-ending hands and original money strings without later streets',async()=>{
   server(preflop);window.location.hash='hands';const user=userEvent.setup();render(<App />);
   await user.click(await screen.findByRole('button',{name:/Open Palmdale hand/}));
+  await screen.findByRole('region',{name:'Hand replay'});
+  await user.click(screen.getByText('Full hand history and sources'));
   await screen.findByRole('region',{name:'Preflop 1'});
   expect(screen.getByText('-$0.05')).toBeInTheDocument();
   expect(screen.queryByRole('heading',{name:'River'})).not.toBeInTheDocument();

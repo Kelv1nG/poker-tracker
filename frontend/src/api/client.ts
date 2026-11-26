@@ -1,4 +1,4 @@
-import type { HandDetail, HandSummary, HandFilters, HandOptions, ImportJob, JobDetail, Overview, Page, UserSettings, Watcher } from './contracts';
+import type { HandDetail, HandPage, HandFilters, HandOptions, ImportJob, JobDetail, Overview, Page, UserSettings, Watcher } from './contracts';
 
 function query(values:Record<string,string|number|boolean|null|undefined>) {
   const params=new URLSearchParams();
@@ -33,7 +33,7 @@ export const api={
   watcher:(signal?:AbortSignal)=>request<Watcher>('/watcher',{},signal),
   rescan:()=>request<{scheduled:boolean}>('/watcher/rescan',{method:'POST'}),
   handOptions:(player:string,signal?:AbortSignal)=>request<HandOptions>(`/hand-options${query({player,search:player})}`,{},signal),
-  hands:(filters:HandFilters,signal?:AbortSignal)=>request<Page<HandSummary>>(`/hands${query({...filters})}`,{},signal),
+  hands:(filters:HandFilters,signal?:AbortSignal)=>request<HandPage>(`/hands${query({...filters,with_review:true})}`,{},signal),
   hand:(source:string,id:string,signal?:AbortSignal)=>request<HandDetail>(`/hands/${encodeURIComponent(source)}/${encodeURIComponent(id)}`,{},signal),
   overview:(signal?:AbortSignal)=>request<Overview>('/overview',{},signal),
 };

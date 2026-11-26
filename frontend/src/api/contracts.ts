@@ -37,3 +37,12 @@ export interface HandOptions { players:string[]; units:{value:string;label:strin
 export interface Provenance { source_hash:string; source_index:number; payload_hash:string; is_conflict:boolean; filenames:string[]; submissions:Submission[] }
 export interface HandDetail extends HandIdentity { payload:HandPayload; source_timezone:string|null; started_at_utc:string|null; currency_code:string|null; quality_flags:string[]; provenance:Provenance[] }
 export interface Overview { hand_count:number; source_file_count:number; import_count:number; failed_import_count:number; rejected_count:number; conflict_count:number; partial_import_count:number; first_observed:string|null; last_observed:string|null }
+
+export interface UnitReport {
+  unit:string; label:string; currency_code:string|null; currency_symbol:string|null;
+  hand_count:number; dealt_hands:number; net_won:string; bb100:string|null; bb_hands:number;
+  preflop_hands:number; vpip_hands:number; pfr_hands:number; vpip:string|null; pfr:string|null;
+}
+export interface PositionReport extends UnitReport { position:string }
+export interface HandReview { player:string; totals:UnitReport[]; all_positions:UnitReport[]; positions:PositionReport[] }
+export interface HandPage extends Page<HandSummary> { review?:HandReview|null }
