@@ -67,3 +67,21 @@ The real local 1,145-hand export imported as 1,145 new records, then 1,145 dupli
 under another filename. Its archive matched the original SHA-256 and 18,382 ordered
 events survived. Actual directory-created overlapping input produced two duplicates.
 Smoke data and snapshots stay under `/tmp`; personal exports are not committed.
+
+The Hands API derives player facts from normalized tables using migration 003's
+`player_hand_analysis` view. Existing canonical imports gain those fields without
+reimport. `GET /api/hand-options?player=NAME&search=TEXT` returns at most 100 player
+suggestions plus exact opaque unit/stake tokens for that player. The UI refreshes
+options after completed imports without replacing filter drafts.
+
+`GET /api/hands` supports `player`, `include_not_dealt`, `game_type`
+(`HU/MULTIWAY/UNKNOWN`), `result` (`won/lost/breakeven`), `position`
+(`SB/BB/BTN/CO/HJ/UTG/UNKNOWN`), `stake`, `action` (`RAISE/CALL/BET/CHECK/FOLD`),
+optional `street` (`Preflop/Flop/Turn/River`), `net_min`, `net_max`, `unit`, and
+`sort` (`date_desc/date_asc/net_desc/net_asc`), alongside existing printed `from`/`to`
+and exact `table_name`. Numeric money values are decimal strings with up to eight
+fractional digits; response monetary fields are strings. No player selects the
+baseline all-hands browser; actor-specific filters require a player. Counts and
+keyset pages share a read snapshot. Cursors are bound to the full applied query;
+change any filter and start from the first page. Action means at least one matching
+betting event, not an action-sequence search.

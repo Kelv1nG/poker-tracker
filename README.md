@@ -33,8 +33,11 @@ packages with uv and installs the frontend from its npm lock.
 3. Select an import filename to inspect errors, partial-export warnings or retry the
    archive. Duplicates do not add another canonical hand. Conflicts preserve the first
    imported version and remain visible as rejected records.
-4. On Hands, filter by inclusive printed times and exact table name. Open a hand to
-   inspect players, cards and every phase/event, including both runouts.
+4. On Hands, select a player (saved hero is the default). Filter by heads-up/multiway,
+   result, stakes, position and player action. **More filters** has printed date bounds,
+   exact table, street, net bounds, money unit and date/net ordering. Choose **Apply
+   filters** to update the whole matching library. Open a table-name link for every
+   original phase/event, including both runouts.
 5. Overview shows committed library counts and observed source times.
 
 Watching works while the application runs. Pausing discovery leaves accepted jobs
@@ -42,9 +45,25 @@ running. Enabled watching and queued/interrupted jobs resume after restart. Run 
 backend process per data directory.
 
 Optional Source settings on Imports record exact hero name, IANA source timezone and
-ISO currency code. These apply to newly imported hands. Printed hand times are never
+ISO currency code. Hero selects the initial Hands player, including existing imports.
+Timezone and currency context apply to newly imported hands. Printed hand times are never
 silently converted to the machine timezone. Export completion does not guarantee
 complete requested-date coverage.
+
+Hands counts only explicit dealt recipients for HU, including hidden cards. Listed
+observers are excluded for a selected player until **Include listed players…** is
+checked. Ambiguous participation, stakes and inferred positions remain Unknown.
+SB includes the HU button; BTN means a separate button with 3+ dealt players. The
+compact grid scrolls horizontally for its remaining columns on narrow screens.
+
+Net amounts stay exact and preserve their original display. Numeric net bounds and
+net sorting require one money context; select a unit when contexts are mixed.
+An unresolved `$` symbol is labelled as such, never assumed to mean USD. Existing
+imports gain these fields automatically on restart; no reimport is necessary.
+
+See the [filter design](docs/superpowers/specs/2026-11-26-hand-filters-design.md),
+[desktop preview](docs/previews/hand-filters-1280.png) and
+[narrow preview](docs/previews/hand-filters-390.png).
 
 ## Data and development
 
