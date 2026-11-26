@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from anyio import to_thread
 from fastapi import FastAPI, Request
 
-from poker_tracker.api import imports, settings as settings_api, watcher
+from poker_tracker.api import hands, imports, overview, settings as settings_api, watcher
 from poker_tracker.api.models import json_response
 from poker_tracker.ingestion.runtime import Runtime
 from poker_tracker.settings import Settings
@@ -31,6 +31,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def invalid(request: Request, exc):
         return json_response({'detail':str(exc)},422)
 
-    for router in (imports.router,settings_api.router,watcher.router):
+    for router in (imports.router,settings_api.router,watcher.router,hands.router,overview.router):
         app.include_router(router,prefix='/api')
     return app
