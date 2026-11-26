@@ -120,7 +120,7 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
       {(cursors.length>1||data.hands.next_cursor)&&<div className="pagination"><button disabled={loading||cursors.length===1} onClick={()=>setCursors(old=>old.slice(0,-1))}>Previous hands</button><button disabled={loading||!data.hands.next_cursor} onClick={()=>setCursors(old=>[...old,data.hands.next_cursor])}>Next hands</button></div>}
     </>}
     {selected&&<HandDetails key={`${selected.source}:${selected.id}`} source={selected.source} id={selected.id} hero={filters.player||null} onClose={()=>setSelected(null)}/>}
-    {!selected&&data&&data.hands.items.length>0&&<p className="muted replay-empty">Select a table-name link to replay a hand.</p>}
+    {!selected&&data&&data.hands.items.length>0&&<p className="muted replay-empty">Select any hand row to replay it.</p>}
       </div>
     </div>
   </>;
@@ -143,7 +143,10 @@ function HandRow({hand:h,actor,selected,open}:{hand:HandSummary;actor:boolean;se
   const line=lines.map(street=>street.actions.join('')).join('-');
   const lineDescription=lines.map(street=>`${street.street}: ${street.description}`).join('; ');
   const uncertain=h.posted_sb!=null&&h.nominal_sb==null||h.posted_bb!=null&&h.nominal_bb==null;
-  return <tr aria-selected={selected}>
+  return <tr className="hand-row" tabIndex={0} aria-selected={selected}
+    aria-label={`Replay ${h.table_name} hand ${h.hand_id}`}
+    onClick={event=>{if(!(event.target as HTMLElement).closest('button,a,input,select,textarea,summary'))open();}}
+    onKeyDown={event=>{if(event.target===event.currentTarget&&(event.key==='Enter'||event.key===' ')){event.preventDefault();open();}}}>
     <td className="date-cell">{h.started_at_local.replace('T',' ')}</td>
     <td>{actor?<Cards cards={h.hole_cards??[]}/>:<span className="muted">—</span>}</td>
     <td>{actor?h.player_dealt===false?'Not dealt':h.preflop_spot??'Unknown':'—'}</td>

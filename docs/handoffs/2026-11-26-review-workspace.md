@@ -91,3 +91,24 @@ Execution rulings: reuse the previously authorized alternate-metadata fallback a
 retain the branch as selected in the plan; no new approval checkpoints. Cost:
 normal Git history requires bundle adoption outside the runner. No implementation
 scope deviations or additional review exclusions were accepted.
+
+## Full-width layout and row-selection follow-up
+
+Any hand cell now opens the selected hand's replay. Rows have hover/selection and
+keyboard-focus feedback; Enter and Space also open the hand. The existing detail
+heading receives focus after loading, bringing the selected hand into view. Clicking
+the table-name button still works without triggering duplicate row activation.
+
+The application fills the browser width without an outer card, border, radius,
+maximum width or surrounding margins. Main content retains small edge spacing. The
+position report is capped at 300px on desktop so the recovered width goes to the
+hand grid. All eleven columns fit without horizontal scrolling at 1920px and 2560px
+with the real sample responses; smaller screens retain contained grid scrolling.
+
+Validation: expected pointer/keyboard regressions failed before implementation;
+44 frontend tests and the production build pass. Production Firefox inspection uses
+actual ASGI snapshots at 1920px, 2560px, 1280px and a true 390px viewport, including
+row-click replay, full-width geometry and overflow. The earlier full backend and
+acquisition results precede this UI-only follow-up. See the latest
+[desktop preview](../previews/hands-full-width-1920.png). The bundle is updated with
+this follow-up; branch retention and the integration instructions above still apply.

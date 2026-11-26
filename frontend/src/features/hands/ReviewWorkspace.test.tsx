@@ -70,14 +70,27 @@ test('mixed-unit position drill changes only position and preserves the pending 
   expect(screen.getByLabelText('Money unit')).toHaveValue('peso');
 });
 
-test('selection opens replay before full history and an empty result has no stale net',async()=>{
+test('clicking a hand cell opens replay before full history',async()=>{
   const {user}=setup();render(<HandsPage/>);
-  await user.click(await screen.findByRole('button',{name:/Open Apple Valley hand/}));
+  const tableLink=await screen.findByRole('button',{name:/Open Apple Valley hand/});
+  await user.click(within(tableLink.closest('tr')!).getByText('2026-11-25 03:10'));
   const replay=await screen.findByRole('region',{name:'Hand replay'});
   expect(within(replay).getByRole('slider',{name:'Replay step'})).toHaveValue('0');
   expect(within(replay).queryByRole('img',{name:'4 of spades'})).not.toBeInTheDocument();
   await user.click(screen.getByText('Full hand history and sources'));
   expect(screen.getByRole('region',{name:'Table Cards Dealt 7'})).toBeVisible();
+});
+
+test.each(['{Enter}',' '])('a focused hand row opens replay with %s',async key=>{
+  const {user}=setup();render(<HandsPage/>);
+  const tableLink=await screen.findByRole('button',{name:/Open Apple Valley hand/});
+  const row=tableLink.closest('tr')!;
+  row.focus();
+  expect(row).toHaveFocus();
+  await user.keyboard(key);
+  const replay=await screen.findByRole('region',{name:'Hand replay'});
+  expect(within(replay).getByRole('slider',{name:'Replay step'})).toHaveValue('0');
+  expect(row).toHaveAttribute('aria-selected','true');
 });
 
 test('empty report is explicit instead of showing an unrelated total',async()=>{

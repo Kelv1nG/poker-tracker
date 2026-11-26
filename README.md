@@ -38,7 +38,7 @@ packages with uv and installs the frontend from its npm lock.
    exact table, street, net bounds, money unit and date/net ordering. Choose **Apply
    filters** to update the whole matching library. Matching counts and per-unit net
    totals cover every page. Compare positions on the left and click a position to
-   drill down while keeping other form drafts. Open a table-name link for replay;
+   drill down while keeping other form drafts. Click any hand row for replay;
    expand **Full hand history and sources** for every original phase/event.
 5. Overview shows committed library counts and observed source times.
 
@@ -56,7 +56,9 @@ Hands counts only explicit dealt recipients for HU, including hidden cards. List
 observers are excluded for a selected player until **Include listed players…** is
 checked. Ambiguous participation, stakes and inferred positions remain Unknown.
 SB includes the HU button; BTN means a separate button with 3+ dealt players. The
-compact grid scrolls horizontally for its remaining columns on narrow screens.
+page uses the full browser width, with a compact position report beside the hand
+grid. On narrow screens the grid scrolls internally. Click anywhere on a hand row,
+or focus it and press Enter/Space, to open its paused replay below the grid.
 Click **Date** or **Net won** in the grid header to toggle descending/ascending order
 across all matching hands. The arrow shows the active order; sorting resets pagination
 and preserves other filter drafts. Net won requires an applied player selection.
@@ -88,6 +90,8 @@ See the [review design](docs/superpowers/specs/2026-11-26-review-workspace-desig
 [desktop preview](docs/previews/review-overview-1280.png),
 [narrow preview](docs/previews/review-overview-390.png) and
 [replay preview](docs/previews/review-replay-1280.png).
+The latest [full-width desktop preview](docs/previews/hands-full-width-1920.png)
+shows the updated layout and all eleven hand columns.
 
 ## Data and development
 
