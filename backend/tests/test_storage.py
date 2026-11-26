@@ -58,3 +58,22 @@ def test_multiple_reads_use_one_snapshot_during_concurrent_commit(tmp_path):
         assert reader.execute('SELECT count(*) FROM app_settings').fetchone()[0] == 0
     with db.read_connection() as reader:
         assert reader.execute('SELECT count(*) FROM app_settings').fetchone()[0] == 1
+
+
+def test_database_ownership_releases_engine_after_last_owner_closes(tmp_path):
+    import duckdb
+    path=tmp_path/'tracker.duckdb'
+    first,second=Database(path),Database(path)
+    with first.write_transaction() as con:
+        con.execute("INSERT INTO app_settings VALUES ('hero_name','\"Tassadar\"')")
+    first.close()
+    with pytest.raises(RuntimeError,match='closed'):
+        with first.read_connection():
+            pass
+    with second.read_connection() as con:
+        assert con.execute('SELECT count(*) FROM app_settings').fetchone()[0]==1
+    second.close()
+    # A different DuckDB configuration can attach only after the previous engine
+    # has released its handle; no parent connection may leak after shutdown.
+    with duckdb.connect(str(path),config={'threads':1}) as reopened:
+        assert reopened.execute('SELECT count(*) FROM app_settings').fetchone()[0]==1

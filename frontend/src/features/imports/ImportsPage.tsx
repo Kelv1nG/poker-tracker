@@ -52,7 +52,7 @@ export function ImportsPage() {
           <tbody>{data.history.items.map(job=><tr key={job.job_id}><td><button className="text-button filename" aria-expanded={selected===job.job_id} onClick={()=>setSelected(job.job_id)}>{job.filename}</button>
             <span className="row-meta">{job.trigger==='upload'?'Manual upload':job.trigger==='watch'?'Folder import':'Retry'} · {new Date(job.created_at).toLocaleString()}</span>
             {job.source_metadata?.partial&&<span className="row-meta warning">Partial export</span>}</td>
-            {(['new','duplicate','rejected'] as const).map(key=><td key={key} className="numeric">{job.status==='queued'||job.status==='processing'?'—':job.counts[key].toLocaleString()}</td>)}
+            {(['new','duplicate','rejected'] as const).map(key=><td key={key} className="numeric">{job.status==='queued'||job.status==='processing'||job.status==='failed'?'—':job.counts[key].toLocaleString()}</td>)}
             <td><span className={`status ${job.status}`}>{statuses[job.status]}</span></td></tr>)}</tbody></table></div>}
         {data.history.total>50&&<div className="pagination"><button disabled={loading||cursors.length===1} onClick={()=>setCursors(old=>old.slice(0,-1))}>Previous imports</button><button disabled={loading||!data.history.next_cursor} onClick={()=>setCursors(old=>[...old,data.history.next_cursor])}>Next imports</button></div>}
       </section>

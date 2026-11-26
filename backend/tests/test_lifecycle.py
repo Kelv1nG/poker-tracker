@@ -71,3 +71,12 @@ def test_enabled_watching_resumes_after_restart_and_imports_actual_files(tmp_pat
             raise AssertionError('Watcher did not discover a stable file')
         assert client.post('/api/watcher/rescan').status_code == 202
         assert client.get('/api/watcher').json()['enabled'] is True
+
+
+def test_same_app_can_restart_after_releasing_its_database(tmp_path):
+    app=create_app(Settings(tmp_path))
+    with TestClient(app) as client:
+        assert client.get('/api/overview').status_code==200
+    assert app.state.runtime.importer.database.closed
+    with TestClient(app) as client:
+        assert client.get('/api/overview').status_code==200

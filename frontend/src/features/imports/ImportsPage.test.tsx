@@ -105,3 +105,13 @@ test('saves optional exact hero name and explicit source context',async () => {
   expect(saved().source_timezone).toBe('Asia/Manila');
   expect(saved().currency_code).toBe('PHP');
 });
+
+test('file-level failures show an error without implying that records were classified',async () => {
+  server([{...job,status:'failed',counts:{new:0,duplicate:0,rejected:0,conflict:0},error:'Invalid JSON: expected an object'}]);
+  const user=userEvent.setup();render(<App />);
+  const button=await screen.findByRole('button',{name:'sample.json'});
+  expect(within(button.closest('tr')!).queryAllByText('0')).toHaveLength(0);
+  await user.click(button);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Invalid JSON');
+  expect(screen.getByText('No hands were committed by this attempt.')).toBeInTheDocument();
+});

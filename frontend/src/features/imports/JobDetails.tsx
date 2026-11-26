@@ -12,7 +12,7 @@ export function JobDetails({id,onRetried,onClose}:{id:string;onRetried:()=>void;
     {error&&<p role="alert" className="error">{error} <button onClick={reload}>Try again</button></p>}
     {!job&&!error&&<p role="status">Loading import…</p>}
     {job&&<><p className="filename">{job.filename}</p>
-      <p className="muted">{job.counts.new.toLocaleString()} new · {job.counts.duplicate.toLocaleString()} duplicate · {job.counts.rejected.toLocaleString()} rejected</p>
+      {job.status==='failed'?<p className="muted">No hands were committed by this attempt.</p>:<p className="muted">{job.counts.new.toLocaleString()} new · {job.counts.duplicate.toLocaleString()} duplicate · {job.counts.rejected.toLocaleString()} rejected</p>}
       {!!job.counts.conflict&&<p className="warning">{job.counts.conflict} conflicting versions. Conflicts are included in rejected; the original hands were kept.</p>}
       {job.source_metadata?.partial&&<p className="warning">Partial export. {job.source_metadata.message||'Capture stopped before completion.'} Observed hands do not prove full date coverage.</p>}
       {job.error&&<p role="alert" className="error">{job.error}</p>}

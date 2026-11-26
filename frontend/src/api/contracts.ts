@@ -20,5 +20,5 @@ export interface Phase { name:string; board:Card[]; new_cards:Card[]; events:Han
 export interface HandPayload { id:string; table_name:string; started_at:string; started_at_display?:string; players:Player[]; phases:Phase[] }
 export interface HandSummary { source_id:string; hand_id:string; table_name:string; started_at_local:string; player_count:number }
 export interface Provenance { source_hash:string; source_index:number; payload_hash:string; is_conflict:boolean; filenames:string[]; submissions:Submission[] }
-export interface HandDetail extends HandSummary { payload:HandPayload; source_timezone:string|null; started_at_utc:string|null; currency_code:string|null; quality_flags:string[]; provenance:Provenance[] }
+export interface HandDetail extends Omit<HandSummary,'player_count'> { payload:HandPayload; source_timezone:string|null; started_at_utc:string|null; currency_code:string|null; quality_flags:string[]; provenance:Provenance[] }
 export interface Overview { hand_count:number; source_file_count:number; import_count:number; failed_import_count:number; rejected_count:number; conflict_count:number; partial_import_count:number; first_observed:string|null; last_observed:string|null }

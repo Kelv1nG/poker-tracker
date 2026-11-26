@@ -22,6 +22,10 @@ class Runtime:
         self._thread = None
 
     def start(self):
+        if self.importer.database.closed:
+            self.importer=Importer(self.settings)
+            self.scanner=FolderScanner(self.importer)
+            self.worker=ImportWorker(self.importer)
         self.importer.recover()
         self.scan()
         self._stop.clear()
@@ -53,6 +57,7 @@ class Runtime:
         if self._thread:
             self._thread.join()
         self.worker.stop()
+        self.importer.database.close()
 
     def is_alive(self):
         return self._thread is not None and self._thread.is_alive()
