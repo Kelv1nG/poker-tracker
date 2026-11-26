@@ -13,7 +13,7 @@ function setup({mixed=false,empty=false}={}) {
   vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
     const u=new URL(String(input),'http://localhost');
     if(u.pathname==='/api/settings')return Response.json({hero_name:'Tassadar'});
-    if(u.pathname==='/api/hand-options')return Response.json({players:['Tassadar'],units:[{value:'dollars',label:unit.label}],stakes:[]});
+    if(u.pathname==='/api/hand-options')return Response.json({players:['Tassadar'],units:[{value:'dollars',label:unit.label},...(mixed?[{value:'peso',label:'PHP (₱)'}]:[])],stakes:[]});
     if(u.pathname==='/api/imports')return Response.json({items:[],total:0,next_cursor:null});
     if(u.pathname==='/api/hands') {
       requests.push(u.searchParams);
@@ -57,6 +57,17 @@ test('mixed-unit totals stay separate and rate columns can be expanded',async()=
   await user.click(screen.getByLabelText('Show VPIP and PFR'));
   expect(screen.getAllByRole('columnheader',{name:'VPIP'})).toHaveLength(2);
   expect(screen.getAllByRole('columnheader',{name:'PFR'})).toHaveLength(2);
+});
+
+test('mixed-unit position drill changes only position and preserves the pending unit',async()=>{
+  const {requests,user}=setup({mixed:true});render(<HandsPage/>);
+  await screen.findByRole('button',{name:'Filter position BB in Displayed $ (currency unset)'});
+  await user.click(screen.getByText('More filters'));
+  await user.selectOptions(screen.getByLabelText('Money unit'),'peso');
+  await user.click(screen.getByRole('button',{name:'Filter position BB in Displayed $ (currency unset)'}));
+  await waitFor(()=>expect(requests.at(-1)?.get('position')).toBe('BB'));
+  expect(requests.at(-1)?.has('unit')).toBe(false);
+  expect(screen.getByLabelText('Money unit')).toHaveValue('peso');
 });
 
 test('selection opens replay before full history and an empty result has no stale net',async()=>{

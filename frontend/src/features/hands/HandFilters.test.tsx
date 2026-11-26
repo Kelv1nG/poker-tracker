@@ -109,6 +109,53 @@ test('refreshes new money units after an import without overwriting filter draft
   expect(screen.getByLabelText('Table name')).toHaveValue('Draft table');
 });
 
+test.each(['header','bounds','empty library'])('financial %s query recovers new import units while preserving drafts',async mode=>{
+  let added=false;
+  const requests:URLSearchParams[]=[];
+  vi.stubGlobal('fetch',vi.fn(async(input:string)=>{
+    const u=new URL(String(input),'http://localhost');
+    if(u.pathname==='/api/settings')return Response.json({hero_name:'Tassadar'});
+    if(u.pathname==='/api/imports')return Response.json({items:added?[{job_id:'new',status:'completed',counts:{new:1}}]:[],total:0,next_cursor:null});
+    if(u.pathname==='/api/hand-options')return Response.json({players:['Tassadar'],units:mode==='empty library'&&!added?[]:[{value:'dollars',label:'Displayed $ (currency unset)'},...(added?[{value:'peso',label:'PHP (₱)'}]:[])],stakes:[]});
+    if(u.pathname==='/api/hands'){
+      requests.push(u.searchParams);
+      if(added&&!u.searchParams.has('unit'))return Response.json({detail:'Select a money unit before numeric bounds or money sorting'},{status:422});
+      return Response.json({items:mode==='header'?[{source_id:'bet88',hand_id:'id',table_name:'Reading',started_at_local:'2026-11-25T05:00',player_count:2,player:'Tassadar'}]:[],total:mode==='header'?1:0,next_cursor:null});
+    }
+    throw new Error(String(input));
+  }));
+  const user=userEvent.setup();render(<HandsPage/>);
+  if(mode==='header')await screen.findByRole('button',{name:/Open Reading hand/});
+  else await screen.findByText('No hands found');
+  await user.click(screen.getByText('More filters'));
+  if(mode==='bounds'){
+    await user.type(screen.getByLabelText('Minimum net'),'0');
+    await user.click(screen.getByRole('button',{name:'Apply filters'}));
+    await waitFor(()=>expect(requests.at(-1)?.get('net_min')).toBe('0'));
+  }else if(mode==='header'){
+    await user.click(screen.getByRole('button',{name:'Net won'}));
+    await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('net_desc'));
+  }else{
+    await user.selectOptions(screen.getByLabelText('Sort'),'net_desc');
+    await user.click(screen.getByRole('button',{name:'Apply filters'}));
+    await waitFor(()=>expect(requests.at(-1)?.get('sort')).toBe('net_desc'));
+  }
+  await user.type(screen.getByLabelText('Table name'),'Unapplied table');
+  added=true;
+  await waitFor(()=>expect(within(screen.getByLabelText('Money unit')).getByText('PHP (₱)')).toBeInTheDocument(),{timeout:3000});
+  expect(screen.getByLabelText('Table name')).toHaveValue('Unapplied table');
+  if(mode!=='empty library'){
+    expect(requests.at(-1)?.get('unit')).toBe('dollars');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  }else{
+    await user.selectOptions(screen.getByLabelText('Money unit'),'peso');
+    await user.click(screen.getByRole('button',{name:'Apply filters'}));
+    await waitFor(()=>expect(requests.at(-1)?.get('unit')).toBe('peso'));
+    await waitFor(()=>expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    expect(requests.at(-1)?.get('table_name')).toBe('Unapplied table');
+  }
+});
+
 test('Net won header sorts the full result set both ways and resets the page',async()=>{
   const {requests,user}=setup();render(<HandsPage/>);
   await screen.findByRole('button',{name:/Open Reading hand/});

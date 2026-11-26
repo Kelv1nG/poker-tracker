@@ -3,7 +3,7 @@ from decimal import Decimal, localcontext
 
 from .hand_filters import token, unit_label
 
-POSITION_ORDER = {'SB':0,'BB':1,'UTG':2,'HJ':3,'CO':4,'BTN':5,'UNKNOWN':6}
+POSITION_ORDER = {'SB':0,'BB':1,'UTG':2,'HJ':3,'CO':4,'BTN':5,'UNKNOWN':6,'NOT_DEALT':7}
 COUNT_FIELDS = ('hand_count','dealt_hands','preflop_hands','vpip_hands','pfr_hands','bb_hands')
 
 
@@ -40,14 +40,17 @@ def review_report(con, *, where, parameters, player, position):
         AND e.hand_id=f.hand_id AND e.phase_ordinal=f.ordinal
         WHERE e.type='action' AND f.name='Preflop'
         GROUP BY e.source_id,e.hand_id,e.player
-    ) SELECT h.currency_code,h.currency_symbol,h.position,count(*),sum(h.net_result),
+    ) SELECT h.currency_code,h.currency_symbol,
+        CASE WHEN h.player_dealt IS FALSE THEN 'NOT_DEALT' ELSE h.position END AS position,
+        count(*),sum(h.net_result),
         count(*) FILTER(WHERE h.player_dealt IS TRUE),
         count(*) FILTER(WHERE {reliable}),
         count(*) FILTER(WHERE {reliable} AND p.vpip),
         count(*) FILTER(WHERE {reliable} AND p.pfr)
         FROM player_hand_analysis h LEFT JOIN preflop p ON h.source_id=p.source_id
         AND h.hand_id=p.hand_id AND h.player=p.player
-        WHERE {where} GROUP BY h.currency_code,h.currency_symbol,h.position''',parameters).fetchall()
+        WHERE {where} GROUP BY h.currency_code,h.currency_symbol,
+        CASE WHEN h.player_dealt IS FALSE THEN 'NOT_DEALT' ELSE h.position END''',parameters).fetchall()
     # Division in DuckDB promotes DECIMAL to double. Sum separately per established
     # BB, then divide/add in an explicitly sized Decimal context instead.
     blinds=con.execute(f'''SELECT h.currency_code,h.currency_symbol,h.position,

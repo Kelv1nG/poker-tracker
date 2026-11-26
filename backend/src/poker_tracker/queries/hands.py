@@ -36,7 +36,7 @@ def list_hands(database: Database, *, from_time=None, to_time=None, table_name=N
         raise ValueError('Select an exact player name')
     enums=[(game_type,('HU','MULTIWAY','UNKNOWN'),'game type'),
            (result,('won','lost','breakeven'),'result'),
-           (position,('SB','BB','BTN','CO','HJ','UTG','UNKNOWN'),'position'),
+           (position,('SB','BB','BTN','CO','HJ','UTG','UNKNOWN','NOT_DEALT'),'position'),
            (action,('RAISE','CALL','BET','CHECK','FOLD'),'action'),
            (street,('Preflop','Flop','Turn','River'),'street'),
            (sort,('date_desc','date_asc','net_desc','net_asc'),'sort')]
@@ -85,7 +85,9 @@ def list_hands(database: Database, *, from_time=None, to_time=None, table_name=N
         if max_money is not None:add('h.net_result <= ?',max_money)
         comparison_where=' AND '.join(filters)
         comparison_parameters=parameters.copy()
-        if position:add('h.position = ?',position)
+        if position=='NOT_DEALT':add('h.player_dealt IS FALSE')
+        elif position=='UNKNOWN':add('h.position = ? AND h.player_dealt IS DISTINCT FROM FALSE',position)
+        elif position:add('h.position = ?',position)
         # Bind a cursor to its entire query. Import arrivals do not invalidate it.
         identity=sha256(json.dumps([from_time,to_time,table_name,player,include_not_dealt,game_type,
             result,net_min,net_max,unit,stake,position,action,street,sort],ensure_ascii=False).encode()).hexdigest()
@@ -117,6 +119,7 @@ def list_hands(database: Database, *, from_time=None, to_time=None, table_name=N
     for row in found[:limit]:
         row['started_at_local']=_print_minute(row['started_at_local'])
         row.update(present_hand(decode_json(row.pop('payload')),player))
+        if row['player_dealt'] is False:row['position']='NOT_DEALT'
         if not player:
             for field in ('player','player_dealt','position','position_evidence','preflop_spot','net_result','net_result_display','starting_balance','starting_balance_display'):
                 row[field]=None

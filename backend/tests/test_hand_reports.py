@@ -74,6 +74,23 @@ def test_multiple_raises_count_once_and_forced_blinds_are_not_vpip(library):
     assert due['vpip']=='0.00' and due['pfr']=='0.00'
 
 
+def test_not_dealt_records_stay_distinct_from_unknown_positions(library,preflop_hand):
+    hand=copy.deepcopy(preflop_hand);hand['id']='00000000-0000-4000-8000-000000000010'
+    hand['players'].append(dict(name='Observer',starting_balance='$5',net_result='$0',final_hand=[]))
+    submit(library,[hand])
+    args=dict(player='Observer',include_not_dealt=True,with_review=True)
+    all_hands=list_hands(library.database,**args)
+    assert all_hands['total']==1
+    assert [row['position'] for row in all_hands['review']['positions']]==['NOT_DEALT']
+    unknown=list_hands(library.database,position='UNKNOWN',**args)
+    assert unknown['total']==0 and unknown['review']['totals']==[]
+    observer=list_hands(library.database,position='NOT_DEALT',**args)
+    assert observer['total']==1
+    assert observer['review']['totals'][0]['hand_count']==1
+    assert observer['items'][0]['position']=='NOT_DEALT'
+    assert observer['review']['totals'][0]['preflop_hands']==0
+
+
 def test_no_actor_and_empty_filters_cannot_show_old_totals(library):
     assert list_hands(library.database,with_review=True)['review'] is None
     empty=report(library,table_name='Missing')['review']

@@ -36,9 +36,13 @@ export function replaySnapshot(payload:HandPayload,frames:ReplayFrame[],requeste
     if(event.action_code==='SMALL_BLIND')player.role='SB';
     if(event.action_code==='BIG_BLIND')player.role='BB';
     if(event.action_code==='FOLD')player.folded=true;
-    if(event.cards.length===2&&(event.action==='Was dealt'||event.action==='Showing Pocket Cards'||event.action_code==='SHOW_CARDS')) {
+    if(event.action==='Was dealt'&&event.cards.length===2) {
       player.cards=event.cards.map((card,i)=>card??player.cards[i]??null);
-      if(event.action==='Was dealt')player.dealt=true;
+      player.dealt=true;
+    } else if((event.action==='Showing Pocket Cards'||event.action_code==='SHOW_CARDS')&&event.cards.length>=1&&event.cards.length<=2) {
+      const known=player.cards.filter((card):card is string=>card!==null);
+      for(const card of event.cards)if(card!==null&&!known.includes(card)&&known.length<2)known.push(card);
+      player.cards=[known[0]??null,known[1]??null];
     }
   }
   return {step,finished:step===frames.length,current:frames[step-1]??null,players,boards};

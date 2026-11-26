@@ -24,13 +24,15 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
   const [validation,setValidation]=useState<string|null>(null);
   const moreFilters=useRef<HTMLDetailsElement>(null);
   const moneyUnit=useRef<HTMLSelectElement>(null);
+  const imports=usePoll(signal=>api.imports(null,signal));
+  const importRevision=JSON.stringify(imports.data?.items.filter(job=>job.status!=='queued'&&job.status!=='processing').map(job=>[job.job_id,job.status,job.counts])??[]);
   const {data:loaded,error,loading,reload}=usePoll(async signal=>{
-    const [hands,imports]=await Promise.all([api.hands({...filters,cursor} satisfies HandFilters,signal),api.imports(null,signal)]);
-    const revision=JSON.stringify(imports.items.filter(job=>job.status!=='queued'&&job.status!=='processing').map(job=>[job.job_id,job.status,job.counts]))+hands.total;
+    const hands=await api.hands({...filters,cursor} satisfies HandFilters,signal);
+    const revision=importRevision+hands.total;
     return {hands,revision,queryKey:JSON.stringify(filters)};
-  },[JSON.stringify(filters),cursor]);
-  const data=loaded?.queryKey===JSON.stringify(filters)?loaded:null;
-  const options=usePoll(async signal=>({...(await api.handOptions(draft.player,signal)),player:draft.player}),[draft.player,data?.revision],0);
+  },[JSON.stringify(filters),cursor,importRevision]);
+  const data=!error&&loaded?.queryKey===JSON.stringify(filters)?loaded:null;
+  const options=usePoll(async signal=>({...(await api.handOptions(draft.player,signal)),player:draft.player}),[draft.player,importRevision,data?.revision],0);
   const available=options.data?.player===draft.player?options.data:null;
   const observedRevision=useRef<string|null>(null);
   useEffect(()=>{
@@ -48,11 +50,12 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
     event.preventDefault();setValidation(null);
     if(draft.from&&draft.to&&draft.from>draft.to){setValidation('From must be earlier than or equal to To.');return;}
     if(actor&&(draft.net_min||draft.net_max||draft.sort.startsWith('net_'))&&!draft.unit&&(available?.units.length??0)>1){setValidation('Select a money unit before numeric bounds or money sorting.');return;}
-    setFilters({...draft});setCursors([null]);setSelected(null);reload();
+    const unit=actor&&(draft.net_min||draft.net_max||draft.sort.startsWith('net_'))&&!draft.unit&&available?.units.length===1?available.units[0].value:draft.unit;
+    setFilters({...draft,unit});setDraft(old=>({...old,unit}));setCursors([null]);setSelected(null);reload();
   }
-  function choosePosition(position:string,unit?:string) {
-    setFilters(old=>({...old,position,...(unit?{unit}:{})}));
-    setDraft(old=>({...old,position,...(unit?{unit}:{})}));
+  function choosePosition(position:string) {
+    setFilters(old=>({...old,position}));
+    setDraft(old=>({...old,position}));
     setCursors([null]);setSelected(null);setValidation(null);reload();
   }
   function sortColumn(column:'date'|'net') {
@@ -60,7 +63,7 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
     let unit=filters.unit;
     if(column==='net') {
       if(!filters.player||draft.player!==filters.player||!available)return;
-      unit=draft.unit||filters.unit;
+      unit=draft.unit||filters.unit||(available.units.length===1?available.units[0].value:'');
       if(available.units.length>1&&!unit) {
         setValidation('Select a money unit under More filters, then click Net won again.');
         if(moreFilters.current)moreFilters.current.open=true;
@@ -80,7 +83,7 @@ function HandBrowser({initialPlayer}:{initialPlayer:string}) {
         <label>Player<input list="hand-players" value={draft.player} placeholder="All hands · type an exact name" onChange={e=>setDraft(old=>({...defaults(e.target.value),from:old.from,to:old.to,table_name:old.table_name,game_type:old.game_type}))}/><datalist id="hand-players">{available?.players.map(name=><option key={name} value={name}/>)}</datalist></label>
         {select('Game type','game_type',[['','All games'],['HU','Heads-up'],['MULTIWAY','Multiway'],['UNKNOWN','Unknown']])}
         {select('Result','result',[['','Any result'],['won','Won'],['lost','Lost'],['breakeven','Breakeven']],!actor)}
-        {select('Position','position',[['','Any position'],['SB','SB (HU button included)'],['BB','BB'],['BTN','BTN (3+ players)'],['CO','CO'],['HJ','HJ (MP)'],['UTG','UTG (EP)'],['UNKNOWN','Unknown']],!actor)}
+        {select('Position','position',[['','Any position'],['SB','SB (HU button included)'],['BB','BB'],['BTN','BTN (3+ players)'],['CO','CO'],['HJ','HJ (MP)'],['UTG','UTG (EP)'],['UNKNOWN','Unknown'],['NOT_DEALT','Not dealt (include listed players)']],!actor)}
         {select('Stakes','stake',[['','All stakes'],['UNKNOWN','Unknown nominal stakes'],...(available?.stakes??[]).map(s=>[s.value,`${s.label} · ${available?.units.find(u=>u.value===s.unit)?.label??'unit unset'}`] as [string,string])])}
         {select('Player action','action',[['','Any action'],['RAISE','Raise'],['CALL','Call'],['BET','Bet'],['CHECK','Check'],['FOLD','Fold']],!actor)}
       </div>
@@ -147,7 +150,7 @@ function HandRow({hand:h,actor,selected,open}:{hand:HandSummary;actor:boolean;se
     <td>{(h.boards??[]).length?(h.boards??[]).map((board,i)=><div key={i} className="runout" aria-label={`Board ${i+1}`}><Cards cards={board}/></div>):<span className="muted">—</span>}</td>
     <td>{actor&&line?<span className="betting-line" title={lineDescription}>{line}</span>:'—'}</td>
     <td className={`numeric ${actor&&h.net_result?.startsWith('-')?'negative':actor?'positive':''}`}>{actor?h.net_result_display??'Unknown':'—'}</td>
-    <td><span title={actor?h.position_evidence??'Insufficient evidence':undefined}>{actor?h.position==='UNKNOWN'||!h.position?'Unknown':h.position==='SB'&&h.game_type==='HU'?'SB / button':h.position:'—'}</span></td>
+    <td><span title={actor?h.position_evidence??'Insufficient evidence':undefined}>{actor?h.position==='NOT_DEALT'?'Not dealt':h.position==='UNKNOWN'||!h.position?'Unknown':h.position==='SB'&&h.game_type==='HU'?'SB / button':h.position:'—'}</span></td>
     <td title={uncertain?'Posted amounts; nominal stakes uncertain':'Ordinary blind posts'}>{compact(h.posted_sb)} / {compact(h.posted_bb)}{uncertain?' *':''}</td>
     <td title={`${h.player_count} players listed`}>{h.dealt_player_count==null?'Unknown':h.game_type==='HU'?`HU · ${h.dealt_player_count}`:`${h.dealt_player_count}-handed`}</td>
     <td className="numeric">{actor?h.starting_balance_display??'Unknown':'—'}</td>

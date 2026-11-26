@@ -50,3 +50,15 @@ test('explicit blind roles are revealed as posts occur and steps stay bounded',(
   expect(replaySnapshot(early,frames,0).players.every(p=>p.role===null)).toBe(true);
   expect(replaySnapshot(early,frames,2).players.map(p=>p.role)).toEqual(['SB','BB']);
 });
+
+test('single-card reveals retain one unknown, preserve known cards and rewind',()=>{
+  const hand=structuredClone(early);
+  hand.phases[0].events.push({type:'action',player:'Due Date',action:'Showing Pocket Cards',action_code:'SHOW_CARDS',amount:null,cards:['5c']});
+  const frames=replayFrames(hand);
+  const cards=(step:number)=>replaySnapshot(hand,frames,step).players.find(p=>p.name==='Due Date')?.cards;
+  expect(cards(frames.length)).toEqual(['5c',null]);
+  expect(cards(frames.length-1)).toEqual([null,null]);
+  hand.phases[0].events.push({type:'action',player:'Tassadar',action:'Showing Pocket Cards',action_code:'SHOW_CARDS',amount:null,cards:['7d']});
+  const updated=replayFrames(hand);
+  expect(replaySnapshot(hand,updated,updated.length).players.find(p=>p.name==='Tassadar')?.cards).toEqual(['Ad','7d']);
+});

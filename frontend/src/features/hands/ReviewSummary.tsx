@@ -18,7 +18,7 @@ export function ReviewTotals({review,total,hasPlayer}:{review:HandReview|null|un
   </div>;
 }
 
-export function PositionSummary({review,selectedPosition,onPosition}:{review:HandReview|null|undefined;selectedPosition:string;onPosition:(position:string,unit?:string)=>void}) {
+export function PositionSummary({review,selectedPosition,onPosition}:{review:HandReview|null|undefined;selectedPosition:string;onPosition:(position:string)=>void}) {
   const [advanced,setAdvanced]=useState(false);
   const multi=(review?.all_positions.length??0)>1;
   function net(row:UnitReport){return <span className={row.net_won.startsWith('-')?'negative':'positive'}>{netDisplay(row.net_won,row.currency_symbol)}</span>;}
@@ -29,14 +29,14 @@ export function PositionSummary({review,selectedPosition,onPosition}:{review:Han
       const rows=review.positions.filter(row=>row.unit===unit.unit);
       return <div className="position-unit" key={unit.unit}><p className="muted small unit-label">{unit.label}</p><div className="table-scroll"><table aria-label={`Positions · ${unit.label}`}><thead><tr><th scope="col">Position</th><th scope="col" className="numeric">Hands</th><th scope="col" className="numeric">Net won</th><th scope="col" className="numeric">bb/100</th>{advanced&&<><th scope="col" className="numeric">VPIP</th><th scope="col" className="numeric">PFR</th></>}</tr></thead><tbody>
         {[{...unit,position:''},...rows].map(row=><tr key={row.position} aria-selected={selectedPosition===row.position}>
-          <td><button className="text-button" aria-label={row.position?`Filter position ${row.position}${multi?' in '+unit.label:''}`:multi?`All positions in ${unit.label}`:'All positions'} aria-pressed={selectedPosition===row.position} onClick={()=>onPosition(row.position,multi?unit.unit:undefined)}>{row.position==='UNKNOWN'?'Unknown':row.position||'All positions'}</button></td>
+          <td><button className="text-button" aria-label={row.position?`Filter position ${row.position==='NOT_DEALT'?'Not dealt':row.position}${multi?' in '+unit.label:''}`:multi?`All positions in ${unit.label}`:'All positions'} aria-pressed={selectedPosition===row.position} onClick={()=>onPosition(row.position)}>{row.position==='NOT_DEALT'?'Not dealt':row.position==='UNKNOWN'?'Unknown':row.position||'All positions'}</button></td>
           <td className="numeric" title={`${row.dealt_hands} confirmed dealt hands`}>{row.hand_count.toLocaleString()}</td><td className="numeric">{net(row)}</td>
           <td className="numeric" title={`${row.bb_hands} of ${row.dealt_hands} dealt hands with established BB; 100 × average net / BB`}>{row.bb100??'—'}</td>
           {advanced&&<><td className="numeric" title={`${row.vpip_hands} voluntary preflop / ${row.preflop_hands} reliable dealt hands`}>{row.vpip==null?'—':row.vpip+'%'}</td><td className="numeric" title={`${row.pfr_hands} raised preflop / ${row.preflop_hands} reliable dealt hands`}>{row.pfr==null?'—':row.pfr+'%'}</td></>}
         </tr>)}
       </tbody></table></div></div>;
     })}
-    <p className="muted helper">Comparisons use all applied filters except position. SB includes the HU button. Unknown stays separate.</p>
+    <p className="muted helper">Comparisons use all applied filters except position. SB includes the HU button. Unknown positions and players not dealt in stay separate.</p>
     <p className="muted helper">Rates exclude uncertain participation or blinds where needed. Hover a rate to see its coverage.</p>
   </section>;
 }
