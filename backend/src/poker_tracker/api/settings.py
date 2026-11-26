@@ -79,6 +79,10 @@ def patch_settings(request: Request, patch: SettingsPatch):
             raise ValueError('Choose a directory outside the source archive')
         updates['watch_path'] = str(path)
     with runtime.importer.database.write_transaction() as con:
+        if 'watch_path' in updates or 'watch_enabled' in updates:
+            old=con.execute("SELECT value FROM app_settings WHERE key='watch_generation'").fetchone()
+            generation=(json.loads(old[0]) if old else 0)+1
+            con.execute("INSERT OR REPLACE INTO app_settings VALUES ('watch_generation',?)",[json.dumps(generation)])
         for key,value in updates.items():
             con.execute('INSERT OR REPLACE INTO app_settings VALUES (?, ?)',[key,json.dumps(value)])
     # This synchronous route runs in a worker thread; settings immediately expose

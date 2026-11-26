@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { api, message } from '../../api/client';
 import { usePoll } from '../../api/usePoll';
 import type { JobStatus, UserSettings } from '../../api/contracts';
@@ -16,7 +16,6 @@ export function ImportsPage() {
   const [path,setPath]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);const [actionError,setActionError]=useState<string|null>(null);const [notice,setNotice]=useState('');
   const [selected,setSelected]=useState<string|null>(null); const input=useRef<HTMLInputElement>(null);
-  useEffect(()=>{if(path===null&&data)setPath(data.settings.watch_path);},[data,path]);
   async function changeSettings(patch:Partial<UserSettings>){
     setBusy(true);setActionError(null);setNotice('');
     try {const saved=await api.saveSettings(patch);setPath(saved.watch_path);reload();}

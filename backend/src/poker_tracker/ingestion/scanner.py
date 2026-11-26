@@ -9,7 +9,7 @@ from tempfile import SpooledTemporaryFile
 from threading import Lock
 
 from .importer import Importer
-from .jobs import WatchReceipt
+from .jobs import WatchReceipt, WatchConfigurationChanged
 
 
 @dataclass(frozen=True)
@@ -38,7 +38,7 @@ class FolderScanner:
     def _settings(self):
         with self.importer.database.read_connection() as con:
             return {key: json.loads(value) for key, value in con.execute(
-                "SELECT key,value FROM app_settings WHERE key IN ('watch_path','watch_enabled','watcher_seen')").fetchall()}
+                "SELECT key,value FROM app_settings WHERE key IN ('watch_path','watch_enabled','watcher_seen','watch_generation')").fetchall()}
 
     @contextmanager
     def _snapshot(self, path, signature):
@@ -105,9 +105,12 @@ class FolderScanner:
                                 self._observed.pop(path, None)
                                 continue
                             job = self.importer.enqueue(snapshot, path.name, 'watch',
-                                watch_receipt=WatchReceipt(str(path), tuple(signature)))
+                                watch_receipt=WatchReceipt(str(path), tuple(signature),settings.get('watch_generation',0)))
                         seen[str(path)] = signature
                         jobs.append(job.job_id)
+                    except WatchConfigurationChanged:
+                        self._observed.clear()
+                        break
                     except FileNotFoundError:
                         self._observed.pop(path, None)
                     except (OSError, ValueError) as exc:

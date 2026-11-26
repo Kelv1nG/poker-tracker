@@ -51,9 +51,12 @@ def _utc_context(printed, source_timezone):
     zone = ZoneInfo(source_timezone)
     candidates = set()
     for fold in (0, 1):
-        utc = printed.replace(tzinfo=zone, fold=fold).astimezone(timezone.utc)
-        if utc.astimezone(zone).replace(tzinfo=None) == printed:
-            candidates.add(utc)
+        try:
+            utc = printed.replace(tzinfo=zone, fold=fold).astimezone(timezone.utc)
+            if utc.astimezone(zone).replace(tzinfo=None) == printed:
+                candidates.add(utc)
+        except OverflowError as exc:
+            raise ValueError('started_at: source time is outside the supported UTC conversion range') from exc
     if len(candidates) == 1:
         return candidates.pop(), []
     return None, ['ambiguous_source_time' if candidates else 'nonexistent_source_time']

@@ -1,10 +1,11 @@
 import hashlib
 import json
-from uuid import uuid4
+from pathlib import Path
+from uuid import UUID, uuid4
 
 from poker_tracker.ingestion.archive import archive_source, ArchivedSource
 from poker_tracker.ingestion.bet88 import normalize_hand, validate_envelope
-from poker_tracker.ingestion.jobs import Counts, ImportJob, WatchReceipt
+from poker_tracker.ingestion.jobs import Counts, ImportJob, WatchReceipt, WatchConfigurationChanged
 from poker_tracker.storage.database import Database
 from poker_tracker.storage.repositories import Repository
 
@@ -25,6 +26,14 @@ class Importer:
             raise ValueError('Watch receipts are only valid for directory imports')
         archive = archive_source(stream, self.settings)
         with self.database.write_transaction() as con:
+            if watch_receipt is not None:
+                config={key:json.loads(value) for key,value in con.execute(
+                    "SELECT key,value FROM app_settings WHERE key IN ('watch_path','watch_enabled','watch_generation')").fetchall()}
+                directory=Path(config.get('watch_path') or Path.home()/'Downloads'/'PokerTracker').expanduser().resolve()
+                if (not config.get('watch_enabled',False)
+                    or directory!=Path(watch_receipt.path).parent.resolve()
+                    or config.get('watch_generation',0)!=watch_receipt.generation):
+                    raise WatchConfigurationChanged()
             job = self._queue(con, archive, filename, trigger, source_id)
             if watch_receipt is not None:
                 Repository.remember_watch_receipt(con, watch_receipt)
@@ -112,7 +121,9 @@ class Importer:
                                 index, fingerprint, outcome == 'conflict'])
                     elif isinstance(envelope.hands[index], dict):
                         candidate_id = envelope.hands[index].get('id')
-                        identifier = candidate_id if isinstance(candidate_id, str) else None
+                        if isinstance(candidate_id,str):
+                            try:identifier=str(UUID(candidate_id))
+                            except ValueError:identifier=None
                     counts[outcome] += 1
                     if outcome == 'conflict':
                         counts['rejected'] += 1

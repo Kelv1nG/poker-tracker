@@ -14,6 +14,11 @@ class Counts:
 class WatchReceipt:
     path: str
     signature: tuple[int, ...]
+    generation: int = 0
+
+
+class WatchConfigurationChanged(Exception):
+    """A staged file belongs to a watch configuration that is no longer active."""
 
 
 @dataclass(frozen=True)

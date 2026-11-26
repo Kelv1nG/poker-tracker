@@ -83,3 +83,48 @@ def test_upload_disk_work_is_off_event_loop(tmp_path, preflop_hand, monkeypatch)
         assert response.status_code == 202
         wait_job(client,response.json()['job_id'])
     assert caller_threads and all('portal' not in name for name in caller_threads)
+
+
+@pytest.mark.parametrize('length_header',[True,False])
+def test_streaming_upload_limit_prevents_unbounded_spooling_and_closes_files(tmp_path,monkeypatch,length_header):
+    import asyncio
+    import tempfile
+    from starlette import formparsers
+    from http_client import BoundedSelector
+    opened=[];written=[]
+    class TrackedFile(tempfile.SpooledTemporaryFile):
+        def __init__(self,*args,**kwargs):
+            super().__init__(*args,**kwargs);opened.append(self)
+        def write(self,value):
+            written.append(len(value));return super().write(value)
+    monkeypatch.setattr(formparsers,'SpooledTemporaryFile',TrackedFile)
+    boundary='poker-test-boundary'
+    header=(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="large.json"\r\nContent-Type: application/json\r\n\r\n').encode()
+    body=header+b'x'*1_100_000+f'\r\n--{boundary}--\r\n'.encode()
+    headers={'content-type':f'multipart/form-data; boundary={boundary}'}
+    if length_header:headers['content-length']=str(len(body))
+    app=create_app(Settings(tmp_path,max_upload_bytes=1024))
+    async def interact():
+        responses=[];offset=0
+        async def receive():
+            nonlocal offset
+            chunk=body[offset:offset+128];offset+=len(chunk)
+            return {'type':'http.request','body':chunk,'more_body':offset<len(body)}
+        async def send(message):responses.append(message)
+        scope={'type':'http','asgi':{'version':'3.0'},'http_version':'1.1','method':'POST',
+               'scheme':'http','path':'/api/imports','raw_path':b'/api/imports','query_string':b'',
+               'root_path':'','headers':[(k.encode(),v.encode()) for k,v in headers.items()],
+               'server':('testserver',80),'client':('127.0.0.1',1234)}
+        async with app.router.lifespan_context(app):
+            await app(scope,receive,send)
+            assert responses[0]['status']==413
+            assert sum(written)<=1024
+            assert all(file.closed for file in opened)
+            with app.state.runtime.importer.database.read_connection() as con:
+                assert con.execute('SELECT count(*) FROM import_jobs').fetchone()[0]==0
+        return offset
+    with asyncio.Runner(loop_factory=lambda:asyncio.SelectorEventLoop(BoundedSelector())) as runner:
+        consumed=runner.run(interact())
+    assert consumed< len(body)
+    if not length_header:assert opened and written
+    assert list(tmp_path.rglob('*.json'))==[]

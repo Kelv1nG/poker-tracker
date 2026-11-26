@@ -198,3 +198,24 @@ def test_oversize_upload_is_never_acknowledged_or_archived(tmp_path):
         importer.enqueue(BytesIO(b'12345'), 'big.json', 'upload')
     assert rows(importer, 'SELECT count(*) FROM import_jobs') == [(0,)]
     assert rows(importer, 'SELECT count(*) FROM source_files') == [(0,)]
+
+
+def test_invalid_unicode_identifier_rejects_only_its_own_record(importer,preflop_hand):
+    invalid=copy.deepcopy(preflop_hand);invalid['id']='bad\ud800'
+    raw=json.dumps(dict(schema_version=1,hands=[preflop_hand,invalid]),ensure_ascii=True).encode('ascii')
+    importer.enqueue(BytesIO(raw),'invalid-id.json','upload')
+    result=importer.run_next()
+    assert result.counts==Counts(1,0,1)
+    assert result.status=='completed_with_errors'
+    assert rows(importer,"SELECT source_index,hand_id FROM import_hand_results WHERE outcome='rejected'")==[(1,None)]
+
+
+def test_unconvertible_timezone_boundary_rejects_only_its_own_record(importer,preflop_hand):
+    with importer.database.write_transaction() as con:
+        con.execute("INSERT INTO app_settings VALUES ('source_timezone','\"Asia/Tokyo\"')")
+    ancient=copy.deepcopy(preflop_hand);ancient['id']='00000000-0000-4000-8000-000000000003';ancient['started_at']='0001-01-01T00:00'
+    result=submit(importer,[preflop_hand,ancient])
+    assert result.counts==Counts(1,0,1)
+    assert result.status=='completed_with_errors'
+    reason=rows(importer,"SELECT reason FROM import_hand_results WHERE outcome='rejected'")[0][0]
+    assert 'started_at' in reason

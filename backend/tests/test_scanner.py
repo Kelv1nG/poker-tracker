@@ -1,6 +1,8 @@
 import json
 import os
 from io import BytesIO
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 
 import pytest
 
@@ -192,3 +194,27 @@ def test_same_size_overwrite_with_preserved_mtime_is_reconsidered(setup, preflop
     clock.now += 2
     assert len(scanner.scan_once().job_ids) == 1
     assert importer.run_next().counts.new == 1
+
+
+@pytest.mark.parametrize('change',['pause','redirect','generation'])
+def test_staged_candidates_cannot_queue_after_watch_configuration_changes(setup,preflop_hand,monkeypatch,change):
+    importer,directory,clock=setup
+    (directory/'old.json').write_bytes(export_bytes([preflop_hand]))
+    scanner=FolderScanner(importer,clock=clock);scanner.scan_once();clock.now+=2
+    staged,resume=Event(),Event();original=importer.enqueue
+    def wait_before_enqueue(*args,**kwargs):
+        staged.set();assert resume.wait(5)
+        return original(*args,**kwargs)
+    monkeypatch.setattr(importer,'enqueue',wait_before_enqueue)
+    with ThreadPoolExecutor(1) as pool:
+        future=pool.submit(scanner.scan_once)
+        try:
+            assert staged.wait(5)
+            with importer.database.write_transaction() as con:
+                if change=='pause':con.execute("UPDATE app_settings SET value='false' WHERE key='watch_enabled'")
+                if change=='redirect':con.execute("UPDATE app_settings SET value=? WHERE key='watch_path'",[json.dumps(str(directory/'another'))])
+                con.execute("INSERT OR REPLACE INTO app_settings VALUES ('watch_generation','1')")
+        finally:resume.set()
+        assert future.result(timeout=5).job_ids==[]
+    assert rows(importer,'SELECT count(*) FROM import_jobs')==[(0,)]
+    assert rows(importer,"SELECT count(*) FROM app_settings WHERE key='watcher_seen'")==[(0,)]

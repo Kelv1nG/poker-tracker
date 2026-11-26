@@ -115,3 +115,22 @@ test('file-level failures show an error without implying that records were class
   expect(await screen.findByRole('alert')).toHaveTextContent('Invalid JSON');
   expect(screen.getByText('No hands were committed by this attempt.')).toBeInTheDocument();
 });
+
+test('shows source-reported coverage and finish reason without treating it as guaranteed coverage',async()=>{
+  server([{...job,source_metadata:{partial:false,observed_range:{oldest:'2026-11-24T16:04',newest:'2026-11-25T05:00'},exported_range:{oldest:'2026-11-25T00:04',newest:'2026-11-25T05:00'},finish_reason:'cutoff'}}]);
+  const user=userEvent.setup();render(<App />);
+  await user.click(await screen.findByRole('button',{name:'sample.json'}));
+  expect(await screen.findByText('2026-11-24 16:04')).toBeInTheDocument();
+  expect(screen.getByText('2026-11-25 00:04')).toBeInTheDocument();
+  expect(screen.getByText('Reached date cutoff')).toBeInTheDocument();
+  expect(screen.getAllByText(/does not guarantee full date coverage/).length).toBeGreaterThan(0);
+});
+
+test('opening an accepted partial file with malformed display metadata does not crash the application',async()=>{
+  server([{...job,source_metadata:{partial:true,message:{unexpected:'object'},observed_range:{oldest:[],newest:42},finish_reason:{code:'cutoff'}}}]);
+  const user=userEvent.setup();render(<App />);
+  await user.click(await screen.findByRole('button',{name:'sample.json'}));
+  expect(await screen.findByRole('button',{name:'Retry import'})).toBeInTheDocument();
+  expect(screen.getByText(/Capture stopped before completion/)).toBeInTheDocument();
+  expect(screen.getByRole('heading',{name:'Imports'})).toBeInTheDocument();
+});

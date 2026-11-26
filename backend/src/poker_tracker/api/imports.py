@@ -2,27 +2,34 @@ from pathlib import Path
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Request, UploadFile
+from anyio import to_thread
+from fastapi import APIRouter, HTTPException, Query, Request
+from starlette.datastructures import UploadFile
 
 from poker_tracker.storage.repositories import Repository
 from .models import json_ready, json_response, page, page_offset
+from .upload import upload_form
 
 router = APIRouter()
 Limit = Annotated[int, Query(ge=1,le=200)]
 
 
 @router.post('/imports')
-def upload(request: Request, file: UploadFile):
+async def upload(request: Request):
     runtime = request.app.state.runtime
+    form=await upload_form(request,runtime.settings.max_upload_bytes)
     try:
+        file=form.get('file')
+        if not isinstance(file,UploadFile):
+            raise HTTPException(422,'Choose a JSON export file')
         if not file.filename or Path(file.filename).suffix.lower()!='.json':
             raise HTTPException(422,'Choose a JSON export file')
         if file.size is not None and file.size>runtime.settings.max_upload_bytes:
             raise HTTPException(413,'Source exceeds the upload limit')
-        job = runtime.importer.enqueue(file.file,file.filename,'upload')
+        job = await to_thread.run_sync(runtime.importer.enqueue,file.file,file.filename,'upload')
         return json_response({'job_id':job.job_id,'status':job.status},202)
     finally:
-        file.file.close()
+        await form.close()
 
 
 @router.get('/imports')

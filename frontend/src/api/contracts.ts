@@ -5,7 +5,7 @@ export interface ImportJob {
   job_id:string; source_hash:string; source_id:string; filename:string;
   trigger:'upload'|'watch'|'retry'; importer_version:number; status:JobStatus; counts:Counts;
   created_at:string; started_at:string|null; finished_at:string|null; error:string|null; retry_of:string|null;
-  source_metadata: { partial?:boolean; message?:string; [key:string]:unknown }|null;
+  source_metadata: { partial?:boolean; message?:unknown; [key:string]:unknown }|null;
 }
 export interface Issue { source_index:number; hand_id:string|null; outcome:'rejected'|'conflict'; reason:string }
 export interface Submission { filename:string; trigger:string; submitted_at:string }
