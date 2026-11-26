@@ -30,32 +30,32 @@
 Files: add queries/hand_reports.py and tests/test_hand_reports.py; modify queries/hands.py, api/hands.py.
 Interfaces: list_hands(...,with_review=False) preserves the default shape; when true includes review={player,totals,positions,all_positions}. Unit aggregate objects include unit token/label/code/symbol, hand_count, dealt_hands, net_won (exact string), bb100, bb_hands, vpip/pfr nullable decimal strings, numerator/eligible counts. Position rows add position. No actor returns null review; empty actor library returns empty groups.
 
-- [ ] Write real-DB/API tests for page-independent sums (fixture hero .05+.05+.14=.24), position-filtered top (.10 BB) versus all-position rows, same action/date/result predicates, mixed units (no combined sum), observers/unknown BB and repeated actions.
-- [ ] Run focused test file RED; implement SQL aggregates over normalized facts with Decimal ratio calculation/rounding in Python. Reuse the list's built predicates; capture comparison predicates before position and append cursor only after reports.
-- [ ] Run backend suite and sample benchmark; commit feat(reports): add exact filtered totals and position summaries.
+- [x] Write real-DB/API tests for page-independent sums (fixture hero .05+.05+.14=.24), position-filtered top (.10 BB) versus all-position rows, same action/date/result predicates, mixed units (no combined sum), observers/unknown BB and repeated actions.
+- [x] Run focused test file RED; implement SQL aggregates over normalized facts with Decimal ratio calculation/rounding in Python. Reuse the list's built predicates; capture comparison predicates before position and append cursor only after reports.
+- [x] Run backend suite and sample benchmark; commit feat(reports): add exact filtered totals and position summaries.
 
 ## Task 2: Deterministic source replay
 
 Files: add frontend/src/features/hands/replay.ts, replay.test.ts, HandReplayer.tsx, HandReplayer.test.tsx; reuse Cards.
 Interfaces: replayFrames(payload) supplies ordered event/phase frames; replaySnapshot(payload, frames, step) returns visible boards, per-player cards/fold status/ordinary blind roles, current event and finished flag. HandReplayer consumes payload, hero and source identity; resets on new payload identity, not polling object identity. No monetary arithmetic.
 
-- [ ] Write failing tests for known early-ending/RIT fixtures, exact first-deal/reveal boundaries, rewind, both boards, result-only cards, phase-only boards and playback lifecycle.
-- [ ] Implement pure frame/state functions, then controls and schematic view. Final results only when finished; timers stop and clean up correctly.
-- [ ] Run frontend suite and build; commit feat(replay): add source-ordered hand replayer.
+- [x] Write failing tests for known early-ending/RIT fixtures, exact first-deal/reveal boundaries, rewind, both boards, result-only cards, phase-only boards and playback lifecycle.
+- [x] Implement pure frame/state functions, then controls and schematic view. Final results only when finished; timers stop and clean up correctly.
+- [x] Run frontend suite and build; commit feat(replay): add source-ordered hand replayer.
 
 ## Task 3: Review workspace integration
 
 Files: API contracts/client; new ReviewSummary.tsx and tests; HandsPage.tsx, HandDetails.tsx/styles and existing tests.
 Interfaces: HandPage extends Page with optional nullable review. api.hands asks with_review=true. Report receives applied player/position and setPosition callback; selection preserves pending form fields except position. Details hosts replay and collapsible full source events, preserving original rendered details when expanded.
 
-- [ ] Write failing UI tests for global report counts/net, position drill-down, unit separation, pending draft preservation, no-player/empty cases and hand selection/replay/full details. Keep existing grid/sort assertions.
-- [ ] Build totals strip, left report and right list/replayer; preserve all grid columns with contained scroll. Show separate unit totals and no combined amount. Add VPIP/PFR toggle and denominator tooltips.
-- [ ] Run frontend suite and build; commit feat(ui): integrate position reports and replay workspace.
+- [x] Write failing UI tests for global report counts/net, position drill-down, unit separation, pending draft preservation, no-player/empty cases and hand selection/replay/full details. Keep existing grid/sort assertions.
+- [x] Build totals strip, left report and right list/replayer; preserve all grid columns with contained scroll. Show separate unit totals and no combined amount. Add VPIP/PFR toggle and denominator tooltips.
+- [x] Run frontend suite and build; commit feat(ui): integrate position reports and replay workspace.
 
 ## Task 4: Acceptance and delivery
 
 Files: docs/README, handoff and production previews.
-- [ ] Run make test / make build; compare sample aggregate totals to independent exact sums and measure read performance.
-- [ ] Inspect production desktop/narrow UI using real ASGI response snapshots, including report selection and run-it-twice replay; disclose socket limitation.
-- [ ] Request one fresh whole-feature review. Reproduce/fix material findings and rerun relevant/full checks.
-- [ ] Document metric definitions/coverage, update preview PNGs and verified bundle, commit docs/fixes in coherent chunks; retain branch without merge/push.
+- [x] Run make test / make build; compare sample aggregate totals to independent exact sums and measure read performance.
+- [x] Inspect production desktop/narrow UI using real ASGI response snapshots, including report selection and run-it-twice replay; disclose socket limitation.
+- [x] Request one fresh whole-feature review. Reproduce/fix material findings and rerun relevant/full checks.
+- [x] Document metric definitions/coverage, update preview PNGs and verified bundle, commit docs/fixes in coherent chunks; retain branch without merge/push.

@@ -36,8 +36,10 @@ packages with uv and installs the frontend from its npm lock.
 4. On Hands, select a player (saved hero is the default). Filter by heads-up/multiway,
    result, stakes, position and player action. **More filters** has printed date bounds,
    exact table, street, net bounds, money unit and date/net ordering. Choose **Apply
-   filters** to update the whole matching library. Open a table-name link for every
-   original phase/event, including both runouts.
+   filters** to update the whole matching library. Matching counts and per-unit net
+   totals cover every page. Compare positions on the left and click a position to
+   drill down while keeping other form drafts. Open a table-name link for replay;
+   expand **Full hand history and sources** for every original phase/event.
 5. Overview shows committed library counts and observed source times.
 
 Watching works while the application runs. Pausing discovery leaves accepted jobs
@@ -64,9 +66,28 @@ net sorting require one money context; select a unit when contexts are mixed.
 An unresolved `$` symbol is labelled as such, never assumed to mean USD. Existing
 imports gain these fields automatically on restart; no reimport is necessary.
 
-See the [filter design](docs/superpowers/specs/2026-11-26-hand-filters-design.md),
-[desktop preview](docs/previews/hand-filters-1280.png) and
-[narrow preview](docs/previews/hand-filters-390.png).
+The position report preserves all applied filters except position, so comparisons
+remain available after a drill-down. Mixed currencies have separate totals and
+tables. A position click changes only position; choose currency through Money unit.
+With listed-player inclusion enabled, **Not dealt** stays separate from Unknown
+position. Net sorting and numeric bounds retain their money context across imports.
+
+Report **bb/100** is 100 times the average recorded net divided by each hand's
+established nominal big blind. Unknown BBs are excluded. Optional **VPIP/PFR** count
+reliable dealt preflop hands with a voluntary call/raise/bet, or a raise respectively;
+repeated actions count once. Hover the rate for numerator/denominator coverage.
+These describe whole-hand results, without attributing profit to an action.
+
+Replay starts paused and follows source event order. Start, Previous, Play/Pause,
+Next and the step slider support review and rewind. Cards appear when dealt or
+revealed, including single-card shows; both runouts remain visible once observed.
+Recorded results appear at the end. The table is schematic: starting balances and
+action amounts are preserved, without invented seating or running pot/stack values.
+
+See the [review design](docs/superpowers/specs/2026-11-26-review-workspace-design.md),
+[desktop preview](docs/previews/review-overview-1280.png),
+[narrow preview](docs/previews/review-overview-390.png) and
+[replay preview](docs/previews/review-replay-1280.png).
 
 ## Data and development
 
@@ -89,8 +110,8 @@ Run `make test` for backend, UI and acquisition tests. `make build` checks TypeS
 and builds the production UI. See [backend details](backend/README.md) and the
 [approved design](docs/superpowers/specs/2026-11-25-local-tracker-design.md).
 
-This prototype focuses on ingestion and inspection. Player statistics, sessions,
-equity, replay and HUD features are future work.
+This prototype includes ingestion, filtering, basic position reports and source
+replay. Sessions, equity/EV, advanced statistics and HUD features remain future work.
 
 ## Acquisition
 

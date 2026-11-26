@@ -76,7 +76,7 @@ options after completed imports without replacing filter drafts.
 
 `GET /api/hands` supports `player`, `include_not_dealt`, `game_type`
 (`HU/MULTIWAY/UNKNOWN`), `result` (`won/lost/breakeven`), `position`
-(`SB/BB/BTN/CO/HJ/UTG/UNKNOWN`), `stake`, `action` (`RAISE/CALL/BET/CHECK/FOLD`),
+(`SB/BB/BTN/CO/HJ/UTG/UNKNOWN/NOT_DEALT`), `stake`, `action` (`RAISE/CALL/BET/CHECK/FOLD`),
 optional `street` (`Preflop/Flop/Turn/River`), `net_min`, `net_max`, `unit`, and
 `sort` (`date_desc/date_asc/net_desc/net_asc`), alongside existing printed `from`/`to`
 and exact `table_name`. Numeric money values are decimal strings with up to eight
@@ -85,3 +85,13 @@ baseline all-hands browser; actor-specific filters require a player. Counts and
 keyset pages share a read snapshot. Cursors are bound to the full applied query;
 change any filter and start from the first page. Action means at least one matching
 betting event, not an action-sequence search.
+
+`with_review=true` adds `review={player,totals,all_positions,positions}` in that
+same transaction; the default response shape is unchanged. No player yields null
+review. Aggregates use normalized facts before cursor/limit. Top totals include
+position; comparisons omit only that predicate. Exact net strings and Decimal
+BB ratios are grouped by currency-code/displayed-symbol context. `NOT_DEALT`
+separates confirmed observers from unknown position and requires inclusion to
+return records. Statistic denominators exclude uncertain participation and unknown
+blinds as appropriate. The frontend replay uses the unchanged canonical detail
+payload; this feature adds neither migrations nor source writes.
