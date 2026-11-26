@@ -24,12 +24,13 @@ def _print_minute(value):
 def list_hands(database: Database, *, from_time=None, to_time=None, table_name=None,
                cursor=None, limit=50, player=None, include_not_dealt=False, game_type=None,
                result=None, net_min=None, net_max=None, unit=None, stake=None, position=None,
-               action=None, street=None, sort='date_desc'):
+               action=None, street=None, sort='date_desc', with_review=False):
     from hashlib import sha256
     from .hand_filters import token,untoken,money,unit_values,option_rows
     from .hand_presentation import present_hand
     if type(limit) is not int or not 1 <= limit <= 200:
         raise ValueError('Limit must be between 1 and 200')
+    if type(with_review) is not bool: raise ValueError('Invalid review flag')
     if type(include_not_dealt) is not bool: raise ValueError('Invalid inclusion flag')
     if player is not None and (not isinstance(player,str) or not player or len(player)>200):
         raise ValueError('Select an exact player name')
@@ -56,7 +57,6 @@ def list_hands(database: Database, *, from_time=None, to_time=None, table_name=N
     if upper:add('h.started_at_local <= ?',upper)
     if table_name is not None:add('h.table_name = ?',table_name)
     if game_type:add('h.game_type = ?',game_type)
-    if position:add('h.position = ?',position)
     if result:add('h.net_result '+{'won':'>','lost':'<','breakeven':'='}[result]+' 0')
     if action:
         predicate=''
@@ -83,6 +83,9 @@ def list_hands(database: Database, *, from_time=None, to_time=None, table_name=N
             add('h.currency_code IS NOT DISTINCT FROM ? AND h.currency_symbol IS NOT DISTINCT FROM ?',c,s)
         if min_money is not None:add('h.net_result >= ?',min_money)
         if max_money is not None:add('h.net_result <= ?',max_money)
+        comparison_where=' AND '.join(filters)
+        comparison_parameters=parameters.copy()
+        if position:add('h.position = ?',position)
         # Bind a cursor to its entire query. Import arrivals do not invalidate it.
         identity=sha256(json.dumps([from_time,to_time,table_name,player,include_not_dealt,game_type,
             result,net_min,net_max,unit,stake,position,action,street,sort],ensure_ascii=False).encode()).hexdigest()
@@ -107,6 +110,9 @@ def list_hands(database: Database, *, from_time=None, to_time=None, table_name=N
             WHERE {where} ORDER BY {order} LIMIT ?""",[*parameters,limit+1])
         columns=[d[0] for d in query.description]
         found=[dict(zip(columns,r)) for r in query.fetchall()]
+        if with_review:
+            from .hand_reports import review_report
+            review=review_report(con,where=comparison_where,parameters=comparison_parameters,player=player,position=position)
     items=[]
     for row in found[:limit]:
         row['started_at_local']=_print_minute(row['started_at_local'])
@@ -123,7 +129,9 @@ def list_hands(database: Database, *, from_time=None, to_time=None, table_name=N
         values=[last['started_at_local'],last['source_id'],last['hand_id']]
         if sort.startswith('net_'):values.insert(0,last['net_result'])
         next_cursor=token([identity,*values])
-    return dict(items=items,next_cursor=next_cursor,total=total)
+    result=dict(items=items,next_cursor=next_cursor,total=total)
+    if with_review:result['review']=review
+    return result
 
 
 def get_hand(database: Database, source_id: str, hand_id: str):
